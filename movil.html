@@ -63,6 +63,10 @@
   .punto { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: late 2s ease-in-out infinite; }
   @keyframes late { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
   @media (prefers-reduced-motion: reduce) { .punto { animation: none } }
+  button.salirm {
+    background: none; border: 1px solid #3b382f; border-radius: 8px;
+    font: inherit; font-size: 12px; color: #b9b4a6; padding: 5px 9px; cursor: pointer;
+  }
   button.volver {
     background: none; border: none; color: #f5f3ec; font: inherit; font-size: 16px;
     cursor: pointer; padding: 6px 10px 6px 0; display: inline-flex; align-items: center; gap: 6px;
@@ -170,6 +174,7 @@
       <button class="volver" id="btnVolver" type="button" hidden>‹ Atrás</button>
       <h1 id="tituloPantalla">Mis destajos</h1>
       <span class="conectado"><span class="punto"></span>Conectado</span>
+      <button class="salirm" type="button" id="btnSalirM" aria-label="Salir">Salir</button>
     </div>
     <p class="obra" id="subtitulo">Torre Catalina · semana del 16 al 20 de noviembre</p>
   </div>
@@ -319,6 +324,22 @@
     clearTimeout(relojAviso);
     relojAviso = setTimeout(function () { $('aviso').hidden = true; }, 4500);
   }
+
+  // Quién entró, y la salida. Lo pone la pantalla de login.
+  try {
+    var sesionM = JSON.parse(localStorage.getItem('rocal_sesion') || 'null');
+    if (sesionM && sesionM.nombre) {
+      var nom = String(sesionM.nombre).split(/\s+/).map(function (w) {
+        return w.length === 1 ? w.toUpperCase() + "." : w.charAt(0).toUpperCase() + w.slice(1);
+      }).join(" ");
+      $('subtitulo').textContent = 'Torre Catalina · semana del 16 al 20 de noviembre · ' + nom;
+    }
+  } catch (err) { /* sin almacenamiento, se queda el nombre de ejemplo */ }
+
+  $('btnSalirM').addEventListener('click', function () {
+    try { localStorage.removeItem('rocal_sesion'); } catch (err) {}
+    location.href = './login.html';
+  });
 
   // --- la lista ---------------------------------------------------------
 

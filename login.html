@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrar · ROCAL Destajos</title>
+<meta name="description" content="Pantalla de entrada de la maqueta de destajos: oficina al tablero, obra al teléfono.">
+<meta name="theme-color" content="#15140f">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* La entrada: una sola tarjeta al centro. Lo unico que decide algo aqui es
+     si entras a oficina o a la obra, porque de eso depende a que pantalla
+     llegas. Todo lo demas es de adorno hasta que haya back. */
+  :root {
+    --bg: #f3f2ee;
+    --panel: #ffffff;
+    --panel-2: #faf9f6;
+    --line: #dedbd2;
+    --line-fuerte: #c9c5b8;
+    --fg: #1d1c18;
+    --fg-soft: #67645a;
+    --accent: #b4411c;
+    --accent-soft: #fbe8e0;
+    --malo: #9c2b2b;
+    --malo-soft: #fae1e1;
+    --chrome: #15140f;
+    --font-head: 'Archivo', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-num: 'IBM Plex Mono', ui-monospace, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141310; --panel: #1e1d19; --panel-2: #262520; --line: #35332c; --line-fuerte: #4a473d;
+      --fg: #f1efe8; --fg-soft: #a8a498; --accent: #e8734a; --accent-soft: #3a1f15;
+      --malo: #f08a8a; --malo-soft: #3a1818; --chrome: #0a0a08; color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+    display: grid; place-items: center;
+    padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-left, 0px))
+             max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px));
+    min-height: 100vh;
+  }
+
+  .caja { width: min(420px, 100%); display: grid; gap: 18px; }
+
+  .marca { text-align: center; }
+  .marca .nombre { font-family: var(--font-head); font-weight: 700; font-size: 26px; letter-spacing: .01em; }
+  .marca .nombre span { color: var(--accent); }
+  .marca .obra { font-size: 13px; color: var(--fg-soft); margin-top: 2px; }
+
+  form {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+    padding: 22px; display: grid; gap: 16px;
+  }
+  h1 { font-family: var(--font-head); font-size: 20px; margin: 0; }
+  .sub { font-size: 13.5px; color: var(--fg-soft); margin: -10px 0 0; }
+
+  .campo { display: grid; gap: 6px; }
+  label { font-size: 13.5px; font-weight: 600; }
+  input {
+    font: inherit; font-size: 16px; color: var(--fg); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 11px; padding: 12px 13px; width: 100%;
+  }
+  input:focus { border-color: var(--accent); outline: none; }
+  input.mal { border-color: var(--malo); background: var(--malo-soft); }
+
+  .papeles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .papel {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2);
+    padding: 12px; cursor: pointer; display: grid; gap: 2px; text-align: left;
+    font: inherit; color: var(--fg);
+  }
+  .papel.elegido { border-color: var(--accent); background: var(--accent-soft); }
+  .papel b { font-size: 14.5px; }
+  .papel small { font-size: 12px; color: var(--fg-soft); }
+
+  button.entrar {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    font: inherit; font-weight: 600; font-size: 16.5px; padding: 14px; cursor: pointer; min-height: 52px;
+  }
+  button.entrar:active { transform: translateY(1px); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .error { color: var(--malo); font-size: 13.5px; min-height: 19px; margin: 0; }
+  .olvide {
+    background: none; border: none; font: inherit; font-size: 13px; color: var(--fg-soft);
+    text-decoration: underline; cursor: pointer; justify-self: center; padding: 0;
+  }
+  .maqueta {
+    border: 1px dashed var(--line-fuerte); border-radius: 12px; padding: 11px 13px;
+    font-size: 12.5px; color: var(--fg-soft); text-align: center;
+  }
+  .maqueta b { color: var(--fg); }
+</style>
+</head>
+<body>
+
+<main class="caja">
+  <div class="marca">
+    <div class="nombre">ROCAL <span>· Destajos</span></div>
+    <div class="obra">Consultoría y construcciones</div>
+  </div>
+
+  <form id="formEntrar" novalidate>
+    <h1>Entrar</h1>
+    <p class="sub">Usa el mismo correo con el que entras al sistema de gestión.</p>
+
+    <div class="campo">
+      <label for="correo">Correo</label>
+      <input type="email" id="correo" autocomplete="username" placeholder="nombre@rocal.mx" value="m.cortes@rocal.mx">
+    </div>
+
+    <div class="campo">
+      <label for="clave">Contraseña</label>
+      <input type="password" id="clave" autocomplete="current-password" placeholder="••••••••" value="rocal2026">
+    </div>
+
+    <div class="campo">
+      <label>¿Desde dónde entras?</label>
+      <div class="papeles">
+        <button class="papel elegido" type="button" data-papel="oficina">
+          <b>Oficina</b>
+          <small>Precios, obras y la semana</small>
+        </button>
+        <button class="papel" type="button" data-papel="obra">
+          <b>Obra</b>
+          <small>Apuntar lo de hoy</small>
+        </button>
+      </div>
+    </div>
+
+    <p class="error" id="error"></p>
+    <button class="entrar" type="submit">Entrar</button>
+    <button class="olvide" type="button" id="btnOlvide">Olvidé mi contraseña</button>
+  </form>
+
+  <p class="maqueta">Esto es una <b>maqueta</b>: no hay cuentas ni contraseñas de verdad todavía. Entra con lo que ya viene escrito.</p>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var papel = 'oficina';
+
+  document.querySelector('.papeles').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-papel]') : null;
+    if (!b) return;
+    papel = b.dataset.papel;
+    Array.prototype.forEach.call(this.querySelectorAll('.papel'), function (x) {
+      x.classList.toggle('elegido', x === b);
+    });
+  });
+
+  function marcarMal(el, si) { el.classList.toggle('mal', si); }
+
+  $('formEntrar').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var correo = $('correo').value.trim();
+    var clave = $('clave').value;
+
+    marcarMal($('correo'), false);
+    marcarMal($('clave'), false);
+
+    /* La unica validacion que vale la pena en una maqueta: que los campos no
+     * vayan vacios, para que se vea como avisa cuando algo falta. Quien
+     * teclea una contraseña corta tambien ve el mensaje de error. */
+    if (!correo || correo.indexOf('@') === -1) {
+      marcarMal($('correo'), true);
+      $('error').textContent = 'Escribe tu correo completo, con arroba.';
+      $('correo').focus();
+      return;
+    }
+    if (clave.length < 4) {
+      marcarMal($('clave'), true);
+      $('error').textContent = 'Correo o contraseña incorrectos.';
+      $('clave').focus();
+      return;
+    }
+
+    $('error').textContent = '';
+
+    /* Se guarda quién entró para que el tablero lo salude por su nombre.
+     * Vive en el navegador y se borra al salir; cuando haya back, esto lo
+     * reemplaza la sesión de Supabase. */
+    try {
+      localStorage.setItem('rocal_sesion', JSON.stringify({
+        correo: correo,
+        nombre: correo.split('@')[0].replace(/[._]/g, ' '),
+        papel: papel,
+        entro: Date.now()
+      }));
+    } catch (err) { /* sin almacenamiento, se entra igual */ }
+
+    location.href = papel === 'obra' ? './movil.html' : './index.html';
+  });
+
+  $('btnOlvide').addEventListener('click', function () {
+    $('error').textContent = 'En la maqueta no hay correos todavía: en la app de verdad aquí llega la liga para cambiarla.';
+  });
+
+  $('correo').addEventListener('input', function () { marcarMal(this, false); $('error').textContent = ''; });
+  $('clave').addEventListener('input', function () { marcarMal(this, false); $('error').textContent = ''; });
+})();
+</script>
+</body>
+</html>

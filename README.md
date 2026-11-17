@@ -60,6 +60,19 @@ Lo que OPUS no trae y aquí sí:
 Los conceptos, unidades y precios unitarios salen del catálogo SPM 2026. Las
 cuadrillas, rendimientos y lo medido son de la maqueta.
 
+## La entrada (`login.html`)
+
+Es por donde se empieza. Correo, contraseña y una pregunta: si entras desde
+**Oficina** o desde la **Obra**. Oficina llega al tablero (`index.html`) y
+obra al teléfono (`movil.html`). El tablero manda de regreso al login si no
+hay nadie dentro, y el botón **Salir** de la barra de arriba cierra la
+sesión.
+
+No hay cuentas de verdad todavía: la sesión es una llave en el navegador y
+lo único que se valida es que el correo traiga arroba y la contraseña no sea
+de tres letras, para que se vea cómo avisa cuando algo falta. Cuando haya
+back, esto lo reemplaza la sesión de Supabase.
+
 ## Las tres vistas de la web
 
 - **Semana en curso**: el catálogo de la semana con el despliegue de cada
