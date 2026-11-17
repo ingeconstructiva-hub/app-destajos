@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Destajos en obra</title>
+<meta name="description" content="Maqueta de la pantalla del residente: ve el destajo, captura avance y lo va calculando.">
+<meta name="theme-color" content="#15140f">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Una pantalla a la vez, como en el telefono: la lista de la semana, o un
+     destajo abierto. Abajo siempre la barra con el total, que se mueve
+     mientras el residente teclea. */
+  :root {
+    --bg: #f3f2ee;
+    --panel: #ffffff;
+    --panel-2: #faf9f6;
+    --line: #dedbd2;
+    --fg: #1d1c18;
+    --fg-soft: #6d6a5f;
+    --accent: #b4411c;
+    --accent-soft: #fbe8e0;
+    --live: #1f7a4d;
+    --live-soft: #e2f1e8;
+    --malo: #9c2b2b;
+    --malo-soft: #fae1e1;
+    --chrome: #15140f;
+    --font-head: 'Archivo', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-num: 'IBM Plex Mono', ui-monospace, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141310; --panel: #1e1d19; --panel-2: #262520; --line: #35332c;
+      --fg: #f1efe8; --fg-soft: #a29e91; --accent: #e8734a; --accent-soft: #3a1f15;
+      --live: #4fc287; --live-soft: #16301f; --malo: #f08a8a; --malo-soft: #3a1818;
+      --chrome: #0a0a08; color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .lado {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* --- barra de arriba --- */
+  .encabezado {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--chrome); color: #f5f3ec;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .encabezado .fila { display: flex; align-items: center; gap: 10px; padding-block: 12px; }
+  .encabezado h1 { font-family: var(--font-head); font-size: 18px; margin: 0; flex: 1; min-width: 0; }
+  .encabezado .obra { font-size: 11.5px; color: #b9b4a6; margin: 0; padding-bottom: 10px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--live-soft); color: var(--live);
+    font-size: 10.5px; font-weight: 600; padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.malo { background: var(--malo-soft); color: var(--malo); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none } }
+  button.volver {
+    background: none; border: none; color: #f5f3ec; font: inherit; font-size: 15px;
+    cursor: pointer; padding: 0 2px 0 0; display: inline-flex; align-items: center; gap: 5px;
+  }
+
+  /* --- lista --- */
+  .lista { padding-top: 14px; display: grid; gap: 9px; }
+  .destajo {
+    width: 100%; text-align: left; background: var(--panel); color: var(--fg);
+    border: 1px solid var(--line); border-radius: 13px; padding: 11px 12px;
+    font: inherit; cursor: pointer; display: grid; gap: 5px;
+  }
+  .destajo:active { border-color: var(--accent); }
+  .destajo .arriba { display: flex; gap: 8px; align-items: baseline; }
+  .destajo .nombre { font-weight: 600; font-size: 14.5px; flex: 1; min-width: 0; }
+  .destajo .clave { font-family: var(--font-num); font-size: 11px; color: var(--fg-soft); }
+  .destajo .imp { font-family: var(--font-num); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .destajo .det { font-size: 11.5px; color: var(--fg-soft); display: flex; justify-content: space-between; gap: 8px; }
+  .barra { height: 5px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .barra i { display: block; height: 100%; background: var(--accent); }
+
+  /* --- detalle --- */
+  .ficha { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; margin-top: 14px; }
+  .ficha h2 { font-family: var(--font-head); font-size: 17px; margin: 0 0 2px; }
+  .ficha .clave { font-family: var(--font-num); font-size: 11.5px; color: var(--fg-soft); }
+  .lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; }
+  .renglon { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .renglon:last-child { border-bottom: none; }
+  .renglon .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .renglon.fuerte { font-weight: 600; }
+  .renglon.fuerte .v { color: var(--accent); }
+  /* La cuadrilla es texto largo: aqui si se deja partir en dos renglones,
+     si no se sale de la ficha en pantallas angostas. */
+  #dCuadrilla { white-space: normal; text-align: right; font-family: var(--font-body); font-size: 13px; max-width: 62%; }
+  .pie { font-size: 11.5px; color: var(--fg-soft); margin: 8px 0 0; }
+
+  .captura { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; margin-top: 12px; }
+  .campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  label { display: grid; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--fg-soft); }
+  input[type="number"] {
+    font: inherit; font-family: var(--font-num); font-size: 19px; text-align: right;
+    color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 11px; width: 100%;
+  }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pasos { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .pasos button {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--fg);
+    padding: 5px 11px; cursor: pointer;
+  }
+
+  .calculo { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 11px 12px; }
+  .grande { font-family: var(--font-num); font-size: 27px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .bumped { animation: bump .6s ease-out; }
+  @keyframes bump { 0% { color: var(--accent); transform: translateY(2px) } 100% { color: inherit; transform: none } }
+  @media (prefers-reduced-motion: reduce) { .bumped { animation: none } }
+
+  /* --- barra de abajo --- */
+  .abajo {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--chrome); color: #f5f3ec;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .abajo .fila { display: flex; align-items: center; gap: 12px; padding-block: 11px; }
+  .abajo .k { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #b9b4a6; font-weight: 600; }
+  .abajo .v { font-family: var(--font-num); font-size: 19px; font-variant-numeric: tabular-nums; }
+  button.guardar {
+    margin-left: auto; background: var(--accent); color: #fff; border: none;
+    border-radius: 10px; font: inherit; font-weight: 600; font-size: 15px;
+    padding: 11px 18px; cursor: pointer;
+  }
+  button.guardar[disabled] { opacity: .45; cursor: default; }
+
+  .aviso {
+    position: fixed; left: max(14px, env(safe-area-inset-left, 0px));
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 7;
+    background: var(--chrome); color: #f5f3ec; border-radius: 12px;
+    padding: 10px 13px; font-size: 13px; box-shadow: 0 12px 26px -12px rgba(0,0,0,.6);
+  }
+  .aviso b { color: #ffb495; }
+</style>
+</head>
+<body>
+
+<header class="encabezado">
+  <div class="lado">
+    <div class="fila">
+      <button class="volver" id="btnVolver" type="button" hidden>‹ Semana</button>
+      <h1 id="tituloPantalla">Destajos</h1>
+      <span class="pill"><span class="dot"></span>En vivo</span>
+    </div>
+    <p class="obra" id="subtitulo">Torre Catalina · Tlaxcala · 16 – 20 nov 2026 · J. Ortega</p>
+  </div>
+</header>
+
+<main class="lado">
+  <section id="pantallaLista">
+    <div class="lista" id="lista"></div>
+    <p class="pie">Lo que oficina cambie en la web aparece aquí solo. Lo que captures aquí, ellos lo ven al momento.</p>
+  </section>
+
+  <section id="pantallaDetalle" hidden>
+    <div class="ficha">
+      <div class="clave" id="dClave">1.01</div>
+      <h2 id="dNombre">Concepto</h2>
+      <div class="renglon"><span>Precio unitario</span><span class="v" id="dPu">$0</span></div>
+      <div class="renglon"><span>Cuadrilla</span><span class="v" id="dCuadrilla">—</span></div>
+      <div class="renglon"><span>Rendimiento de cálculo</span><span class="v" id="dRend">0</span></div>
+      <div class="renglon"><span>Llevas</span><span class="v" id="dLlevas">0</span></div>
+      <div class="barra" style="margin-top:10px"><i id="dBarra" style="width:0%"></i></div>
+      <p class="pie" id="dPie">—</p>
+    </div>
+
+    <div class="captura">
+      <div class="lbl">Avance de hoy</div>
+      <div class="campos">
+        <label>Cantidad<input type="number" id="fCantidad" inputmode="decimal" step="0.5" min="0" value="0"></label>
+        <label>Jornadas de cuadrilla<input type="number" id="fJornadas" inputmode="decimal" step="0.5" min="0" value="1"></label>
+      </div>
+      <div class="pasos" id="pasos"></div>
+
+      <div class="calculo">
+        <div class="lbl">Importe de lo de hoy</div>
+        <div class="grande" id="cImporte">$0</div>
+        <div class="renglon"><span>Rendimiento del día</span><span class="v" id="cRend">—</span></div>
+        <div class="renglon"><span>Contra el de cálculo</span><span class="v" id="cContra">—</span></div>
+        <div class="renglon"><span>Costo de la cuadrilla hoy</span><span class="v" id="cCosto">$0</span></div>
+        <div class="renglon fuerte"><span>Queda de hoy</span><span class="v" id="cQueda">$0</span></div>
+        <p class="pie" id="cPie">Teclea la cantidad y mira cómo se calcula.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="abajo">
+  <div class="lado fila">
+    <div>
+      <span class="k" id="kAbajo">Semana</span>
+      <div class="v" id="vAbajo">$0</div>
+    </div>
+    <button class="guardar" id="btnGuardar" type="button" hidden disabled>Guardar avance</button>
+  </div>
+</div>
+
+<div class="aviso" id="aviso" hidden></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var pesos = function (n, dec) {
+    return '$' + Number(n).toLocaleString('es-MX', {
+      minimumFractionDigits: dec == null ? 0 : dec,
+      maximumFractionDigits: dec == null ? 0 : dec
+    });
+  };
+  var num = function (n, dec) {
+    return Number(n).toLocaleString('es-MX', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  };
+  var escapar = function (t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  // Jornales del municipio de la obra, los mismos de la pantalla de oficina.
+  var JORNAL = { cabo: 750, maestro: 850, albanil: 650, ayudante: 450 };
+  var CORTO = { cabo: 'cabo', maestro: 'maestro', albanil: 'albañil', ayudante: 'ayudante' };
+  var PLURAL = { cabo: 'cabos', maestro: 'maestros', albanil: 'albañiles', ayudante: 'ayudantes' };
+  var ORDEN = ['cabo', 'maestro', 'albanil', 'ayudante'];
+
+  var destajos = [
+    { id: 1, clave: '1.01', nombre: 'MURO DE TABIQUE', unidad: 'M2', pu: 120,
+      presupuestado: 186, ejecutado: 118, cuadrilla: { cabo: 0.1, albanil: 2, ayudante: 2 }, rend: 24, variabilidad: 0.08 },
+    { id: 2, clave: '1.02', nombre: 'FIRME DE 8 CM', unidad: 'M2', pu: 110,
+      presupuestado: 142, ejecutado: 64, cuadrilla: { cabo: 0.1, albanil: 2, ayudante: 3 }, rend: 32, variabilidad: 0.12 },
+    { id: 3, clave: '2.03', nombre: 'APLANADO FINO A ALT. MAXIMA DE 3M', unidad: 'M2', pu: 20,
+      presupuestado: 310, ejecutado: 212, cuadrilla: { cabo: 0.1, albanil: 1, ayudante: 1 }, rend: 80, variabilidad: 0.12 },
+    { id: 4, clave: '1.07', nombre: 'ARMADO DE CASTILLO 15 X 15', unidad: 'M', pu: 60,
+      presupuestado: 96, ejecutado: 96, cuadrilla: { cabo: 0.1, albanil: 1, ayudante: 1 }, rend: 26, variabilidad: 0.10 },
+    { id: 5, clave: '1.11', nombre: 'CIMBRADO', unidad: 'M2', pu: 150,
+      presupuestado: 88, ejecutado: 31, cuadrilla: { cabo: 0.1, maestro: 0.5, albanil: 2, ayudante: 2 }, rend: 26, variabilidad: 0.14 },
+    { id: 6, clave: '3.01', nombre: 'EXCAVACION DE CEPAS', unidad: 'M3', pu: 120,
+      presupuestado: 54, ejecutado: 54, cuadrilla: { cabo: 0.1, ayudante: 4 }, rend: 22, variabilidad: 0.18 }
+  ];
+
+  var abierto = null;
+
+  function jornadaCuadrilla(d) {
+    var t = 0;
+    for (var p in d.cuadrilla) t += d.cuadrilla[p] * JORNAL[p];
+    return t;
+  }
+  function rendCalc(d) { return d.rend * (1 - d.variabilidad); }
+  function describe(d) {
+    return ORDEN.filter(function (p) { return d.cuadrilla[p]; }).map(function (p) {
+      var n = d.cuadrilla[p];
+      return n + ' ' + (n > 1 ? PLURAL[p] : CORTO[p]);
+    }).join(' + ');
+  }
+  var totalSemana = function () {
+    return destajos.reduce(function (s, d) { return s + d.ejecutado * d.pu; }, 0);
+  };
+
+  function latir(el) {
+    el.classList.remove('bumped');
+    void el.offsetWidth;
+    el.classList.add('bumped');
+  }
+
+  var relojAviso;
+  function avisar(html) {
+    $('aviso').innerHTML = html;
+    $('aviso').hidden = false;
+    clearTimeout(relojAviso);
+    relojAviso = setTimeout(function () { $('aviso').hidden = true; }, 4000);
+  }
+
+  // --- lista -----------------------------------------------------------
+
+  function pintarLista() {
+    $('lista').innerHTML = destajos.map(function (d) {
+      var avance = d.presupuestado > 0 ? Math.min(1, d.ejecutado / d.presupuestado) : 0;
+      var cerrado = d.ejecutado >= d.presupuestado;
+      return '<button class="destajo" type="button" data-abrir="' + d.id + '">' +
+        '<span class="arriba"><span class="nombre">' + escapar(d.nombre) + '</span>' +
+        '<span class="imp">' + pesos(d.ejecutado * d.pu) + '</span></span>' +
+        '<span class="det"><span class="clave">' + escapar(d.clave) + ' · ' + escapar(describe(d)) + '</span>' +
+        '<span>' + num(d.ejecutado, 0) + ' / ' + num(d.presupuestado, 0) + ' ' + escapar(d.unidad) + '</span></span>' +
+        '<span class="barra"><i style="width:' + (avance * 100).toFixed(0) + '%"></i></span>' +
+        '<span class="det"><span>' + (cerrado ? 'terminado' : 'faltan ' + num(d.presupuestado - d.ejecutado, 0) + ' ' + escapar(d.unidad)) + '</span>' +
+        '<span>' + pesos(d.pu, 2) + ' por ' + escapar(d.unidad) + '</span></span>' +
+        '</button>';
+    }).join('');
+    $('vAbajo').textContent = pesos(totalSemana());
+  }
+
+  // --- detalle ---------------------------------------------------------
+
+  function abrir(id) {
+    abierto = null;
+    for (var i = 0; i < destajos.length; i++) if (destajos[i].id === id) abierto = destajos[i];
+    if (!abierto) return;
+
+    $('pantallaLista').hidden = true;
+    $('pantallaDetalle').hidden = false;
+    $('btnVolver').hidden = false;
+    $('btnGuardar').hidden = false;
+    $('tituloPantalla').textContent = abierto.clave;
+    $('subtitulo').textContent = 'Torre Catalina · Tlaxcala · ' + describe(abierto);
+    $('kAbajo').textContent = 'Lleva este destajo';
+
+    $('dClave').textContent = abierto.clave + ' · ' + abierto.unidad;
+    $('dNombre').textContent = abierto.nombre;
+    $('dPu').textContent = pesos(abierto.pu, 2);
+    $('dCuadrilla').textContent = describe(abierto);
+    $('dRend').textContent = num(rendCalc(abierto), 1) + ' ' + abierto.unidad + '/jor';
+
+    $('fCantidad').value = 0;
+    $('fJornadas').value = 1;
+    $('pasos').innerHTML = [1, 5, 10, 25].map(function (n) {
+      return '<button type="button" data-mas="' + n + '">+' + n + ' ' + escapar(abierto.unidad) + '</button>';
+    }).join('') + '<button type="button" data-mas="0">limpiar</button>';
+
+    calcular();
+  }
+
+  function cerrar() {
+    abierto = null;
+    $('pantallaLista').hidden = false;
+    $('pantallaDetalle').hidden = true;
+    $('btnVolver').hidden = true;
+    $('btnGuardar').hidden = true;
+    $('tituloPantalla').textContent = 'Destajos';
+    $('subtitulo').textContent = 'Torre Catalina · Tlaxcala · 16 – 20 nov 2026 · J. Ortega';
+    $('kAbajo').textContent = 'Semana';
+    pintarLista();
+  }
+
+  /* Esto es lo que el residente ve moverse mientras teclea: lo que vale lo
+   * de hoy, a que rendimiento salio y si eso alcanza para pagar a la
+   * cuadrilla del dia. */
+  function calcular() {
+    if (!abierto) return;
+    var d = abierto;
+    var cant = Number($('fCantidad').value || 0);
+    var jor = Number($('fJornadas').value || 0);
+
+    var importe = cant * d.pu;
+    var costo = jor * jornadaCuadrilla(d);
+    var queda = importe - costo;
+    var rendHoy = jor > 0 ? cant / jor : 0;
+    var contra = rendCalc(d) > 0 ? rendHoy / rendCalc(d) - 1 : 0;
+
+    $('cImporte').textContent = pesos(importe, 2);
+    $('cRend').textContent = jor > 0 ? num(rendHoy, 1) + ' ' + d.unidad + '/jor' : '—';
+    $('cContra').innerHTML = jor > 0 && cant > 0
+      ? '<span class="pill' + (contra < 0 ? ' malo' : '') + '">' + (contra >= 0 ? '+' : '') + (contra * 100).toFixed(0) + '%</span>'
+      : '—';
+    $('cCosto').textContent = pesos(costo, 2);
+    $('cQueda').textContent = pesos(queda, 2);
+    $('cPie').textContent = cant <= 0
+      ? 'Teclea la cantidad y mira cómo se calcula.'
+      : (queda >= 0
+        ? 'De lo de hoy quedan ' + pesos(queda) + ' después de pagar la cuadrilla.'
+        : 'Hoy la cuadrilla cuesta ' + pesos(-queda) + ' más de lo que se destajó.');
+
+    var nuevo = d.ejecutado + cant;
+    var avance = d.presupuestado > 0 ? Math.min(1, nuevo / d.presupuestado) : 0;
+    $('dLlevas').textContent = num(d.ejecutado, 0) + ' / ' + num(d.presupuestado, 0) + ' ' + d.unidad;
+    $('dBarra').style.width = (avance * 100).toFixed(0) + '%';
+    $('dPie').textContent = cant > 0
+      ? 'Con lo de hoy llegas a ' + num(nuevo, 1) + ' ' + d.unidad + ' de ' + num(d.presupuestado, 0) + '.'
+      : 'Faltan ' + num(Math.max(0, d.presupuestado - d.ejecutado), 1) + ' ' + d.unidad + ' para cerrar el concepto.';
+
+    $('vAbajo').textContent = pesos((d.ejecutado + cant) * d.pu);
+    $('btnGuardar').disabled = !(cant > 0);
+  }
+
+  function guardar() {
+    if (!abierto) return;
+    var cant = Number($('fCantidad').value || 0);
+    if (cant <= 0) return;
+    var d = abierto;
+    d.ejecutado += cant;
+    avisar('Guardado: <b>' + num(cant, 1) + ' ' + escapar(d.unidad) + '</b> de ' + escapar(d.nombre) +
+      ' · ' + pesos(cant * d.pu) + '. Oficina ya lo ve.');
+    cerrar();
+    latir($('vAbajo'));
+  }
+
+  // --- amarres ----------------------------------------------------------
+
+  $('lista').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-abrir]') : null;
+    if (b) abrir(Number(b.dataset.abrir));
+  });
+  $('pasos').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-mas]') : null;
+    if (!b) return;
+    var n = Number(b.dataset.mas);
+    $('fCantidad').value = n === 0 ? 0 : Number($('fCantidad').value || 0) + n;
+    calcular();
+    latir($('cImporte'));
+  });
+  $('fCantidad').addEventListener('input', calcular);
+  $('fJornadas').addEventListener('input', calcular);
+  $('btnVolver').addEventListener('click', cerrar);
+  $('btnGuardar').addEventListener('click', guardar);
+
+  /* Oficina tambien mueve cosas mientras el residente esta adentro: cada
+   * tanto llega un precio corregido, para que se vea que la pantalla no es
+   * una copia congelada. */
+  setInterval(function () {
+    var d = destajos[Math.floor(Math.random() * destajos.length)];
+    var antes = d.pu;
+    d.pu = Math.round(d.pu * (Math.random() < 0.5 ? 1.05 : 0.97) * 100) / 100;
+    if (abierto && abierto.id === d.id) {
+      $('dPu').textContent = pesos(d.pu, 2);
+      calcular();
+      latir($('cImporte'));
+    } else {
+      pintarLista();
+      latir($('vAbajo'));
+    }
+    avisar('Oficina cambió <b>' + escapar(d.nombre) + '</b>: de ' + pesos(antes, 2) + ' a ' + pesos(d.pu, 2) + ' por ' + escapar(d.unidad) + '.');
+  }, 16000);
+
+  pintarLista();
+})();
+</script>
+</body>
+</html>

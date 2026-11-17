@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Destajos en vivo</title>
+<meta name="description" content="Maqueta: oficina administra el catálogo de destajos en web, con cuadrilla, rendimiento y jornales por municipio; la obra lo ve en el teléfono al momento.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: barra arriba con la obra y el municipio, mesa de oficina a la
+     izquierda (catalogo que se despliega concepto por concepto) y, a la
+     derecha, el telefono del residente como testigo de lo que ya ve la obra. */
+  :root {
+    --bg: #f3f2ee;
+    --panel: #ffffff;
+    --panel-2: #faf9f6;
+    --line: #dedbd2;
+    --line-fuerte: #c9c5b8;
+    --fg: #1d1c18;
+    --fg-soft: #6d6a5f;
+    --accent: #b4411c;
+    --accent-soft: #fbe8e0;
+    --live: #1f7a4d;
+    --live-soft: #e2f1e8;
+    --malo: #9c2b2b;
+    --malo-soft: #fae1e1;
+    --chrome: #15140f;
+    --font-head: 'Archivo', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-num: 'IBM Plex Mono', ui-monospace, monospace;
+    color-scheme: light;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141310;
+      --panel: #1e1d19;
+      --panel-2: #262520;
+      --line: #35332c;
+      --line-fuerte: #4a473d;
+      --fg: #f1efe8;
+      --fg-soft: #a29e91;
+      --accent: #e8734a;
+      --accent-soft: #3a1f15;
+      --live: #4fc287;
+      --live-soft: #16301f;
+      --malo: #f08a8a;
+      --malo-soft: #3a1818;
+      --chrome: #0a0a08;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+
+  /* --- barra --- */
+  .barra { background: var(--chrome); color: #f5f3ec; }
+  .barra .adentro {
+    max-width: 1340px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 12px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .marca { font-family: var(--font-head); font-weight: 700; font-size: 17px; }
+  .marca span { color: #ffb495; }
+  .barra .obra { font-size: 13px; color: #b9b4a6; }
+  .barra .derecha { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #b9b4a6; flex-wrap: wrap; }
+  .barra select {
+    font: inherit; font-size: 13px; color: #f5f3ec; background: #26241d;
+    border: 1px solid #3b382f; border-radius: 8px; padding: 5px 8px;
+  }
+  .barra label { display: inline-flex; align-items: center; gap: 7px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--live-soft); color: var(--live);
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.malo { background: var(--malo-soft); color: var(--malo); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none } }
+
+  /* --- mesa --- */
+  .wrap {
+    max-width: 1340px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 64px;
+  }
+  .vistas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .vistas button {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    font: inherit; font-family: var(--font-head); font-size: 14px; font-weight: 600;
+    color: var(--fg-soft); padding: 8px 12px; cursor: pointer; margin-bottom: -1px;
+  }
+  .vistas button.activa { color: var(--accent); border-bottom-color: var(--accent); }
+  .vistas button:hover { color: var(--fg); }
+  .vistas .cuenta {
+    display: inline-block; margin-left: 6px; background: var(--accent); color: #fff;
+    border-radius: 999px; font-size: 10.5px; padding: 1px 6px; vertical-align: 1px;
+  }
+
+  /* --- catalogo y obras --- */
+  .tarjetas { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 760px) { .tarjetas { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } }
+  .propuesta { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; background: var(--panel); padding: 13px 14px; }
+  .propuesta.aplicada { border-left-color: var(--live); opacity: .72; }
+  .propuesta h3 { font-family: var(--font-head); font-size: 14px; margin: 0 0 2px; }
+  .propuesta .de-donde2 { font-size: 11.5px; color: var(--fg-soft); }
+  .propuesta p { font-size: 13.5px; margin: 8px 0 0; }
+  .propuesta .efecto { font-family: var(--font-num); font-size: 13px; margin-top: 8px; }
+  .propuesta .regla { font-size: 12px; color: var(--fg-soft); margin-top: 9px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  .propuesta .regla span {
+    display: block; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+    font-weight: 600; color: var(--accent); margin-bottom: 2px;
+  }
+  .propuesta .botones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .interruptor { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); padding: 11px 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .interruptor .texto { flex: 1; min-width: 220px; font-size: 13.5px; color: var(--fg-soft); }
+  .interruptor .texto b { color: var(--fg); }
+  .fuente { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 14px; display: grid; gap: 6px; align-content: start; }
+  .fuente.muerta { opacity: .6; border-style: dashed; }
+  .fuente .enc { display: flex; align-items: baseline; gap: 8px; }
+  .fuente h3 { font-family: var(--font-head); font-size: 14px; margin: 0; flex: 1; min-width: 0; }
+  .fuente .que { font-size: 11.5px; color: var(--fg-soft); }
+  .fuente .dato { font-family: var(--font-num); font-size: 13.5px; line-height: 1.4; }
+  .fuente .cuando { font-size: 11px; color: var(--fg-soft); }
+  .fuente a { color: var(--accent); font-size: 12px; }
+  .fuente .porque { font-size: 12px; color: var(--fg-soft); }
+  .pill.gris { background: var(--panel-2); color: var(--fg-soft); }
+
+  .obra-tarjeta { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 14px; }
+  .obra-tarjeta.fresca { border-color: var(--accent); background: var(--accent-soft); }
+  .obra-tarjeta h3 { font-family: var(--font-head); font-size: 15px; margin: 0; }
+  .obra-tarjeta .donde { font-size: 12px; color: var(--fg-soft); }
+  .obra-tarjeta .renglon { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .obra-tarjeta .renglon:last-of-type { border-bottom: none; }
+  .obra-tarjeta .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+
+  .mesa { display: grid; grid-template-columns: 1fr; gap: 28px; align-items: start; }
+  @media (min-width: 1080px) { .mesa { grid-template-columns: minmax(0,1fr) 332px; gap: 36px; } }
+
+  .titulo { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  h1 { font-family: var(--font-head); font-size: clamp(22px, 3vw, 28px); font-weight: 700; margin: 0; }
+  .sub { color: var(--fg-soft); font-size: 14px; margin: 0 0 18px; max-width: 72ch; }
+
+  .tiras { display: grid; grid-template-columns: repeat(auto-fit, minmax(146px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .tira { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; }
+  .cifra { font-family: var(--font-num); font-size: 21px; font-variant-numeric: tabular-nums; margin-top: 2px; letter-spacing: -.02em; }
+  .bumped { animation: bump .7s ease-out; }
+  @keyframes bump { 0% { color: var(--accent); transform: translateY(2px) } 100% { color: inherit; transform: none } }
+  @media (prefers-reduced-motion: reduce) { .bumped { animation: none } }
+
+  .tabla-caja { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+  .tabla-top { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tabla-top h2 { font-family: var(--font-head); font-size: 15px; margin: 0; }
+  .tabla-top .de-donde { font-size: 12px; color: var(--fg-soft); flex: 1; min-width: 0; }
+  .scroller { overflow-x: auto; }
+  table.principal { border-collapse: collapse; width: 100%; min-width: 820px; }
+  th {
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-soft);
+    text-align: left; font-weight: 600; padding: 9px 12px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); white-space: nowrap;
+  }
+  th.num, td.num { text-align: right; }
+  table.principal > tbody > tr > td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr.fresca > td { background: var(--accent-soft); }
+  td.concepto { font-weight: 600; min-width: 250px; }
+  td.concepto .cuadrilla { display: block; font-weight: 400; font-size: 12px; color: var(--fg-soft); }
+  .marca-avance { color: var(--accent); font-weight: 600; }
+  td.importe { font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  button.abrir {
+    background: none; border: none; cursor: pointer; font: inherit; color: var(--fg);
+    display: inline-flex; align-items: center; gap: 7px; padding: 0; text-align: left;
+  }
+  button.abrir .flecha { color: var(--accent); font-size: 11px; width: 11px; display: inline-block; }
+  button.abrir:hover .texto { text-decoration: underline; }
+
+  input.celda {
+    font: inherit; font-family: var(--font-num); font-size: 14px; text-align: right;
+    width: 88px; color: var(--fg); background: transparent;
+    border: 1px solid transparent; border-radius: 7px; padding: 5px 7px;
+  }
+  input.celda:hover { border-color: var(--line-fuerte); }
+  input.celda:focus { border-color: var(--accent); background: var(--panel-2); outline: none; }
+
+  button.primario { background: var(--accent); color: #fff; border: none; border-radius: 9px; font: inherit; font-weight: 600; font-size: 13.5px; padding: 8px 14px; cursor: pointer; }
+  button.secundario { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 9px; font: inherit; font-weight: 600; font-size: 13px; padding: 7px 12px; cursor: pointer; }
+  button.secundario:hover { border-color: var(--accent); color: var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* --- despliegue de un destajo --- */
+  tr.detalle > td { background: var(--panel-2); padding: 0 !important; border-bottom: 1px solid var(--line) !important; }
+  .desplegado { display: grid; grid-template-columns: 1fr; gap: 18px; padding: 16px 14px 18px; }
+  @media (min-width: 900px) { .desplegado { grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); gap: 24px; } }
+  .bloque h4 { font-family: var(--font-head); font-size: 12px; margin: 0 0 8px; letter-spacing: .04em; text-transform: uppercase; color: var(--fg-soft); }
+  table.mini { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.mini th { background: transparent; border-bottom: 1px solid var(--line); padding: 5px 6px; font-size: 9.5px; }
+  table.mini td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  table.mini tr:last-child td { border-bottom: none; }
+  table.mini td.n { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .renglon { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .renglon:last-of-type { border-bottom: none; }
+  .renglon .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .renglon.fuerte { font-weight: 600; }
+  .renglon.fuerte .v { color: var(--accent); }
+  .pie { font-size: 12px; color: var(--fg-soft); margin-top: 8px; }
+
+  /* --- analisis del precio unitario, al modo de OPUS --- */
+  .opus { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 16px 14px 18px; }
+  @media (min-width: 1100px) { .opus { grid-template-columns: minmax(0,1.75fr) minmax(0,1fr); gap: 26px; } }
+  .insumos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .ins { border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; background: var(--panel); min-width: 106px; }
+  .ins.activo { border-color: var(--accent); background: var(--accent-soft); }
+  .ins.apagado { opacity: .5; }
+  .ins .k { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; display: block; }
+  .ins .v { font-family: var(--font-num); font-size: 13px; font-variant-numeric: tabular-nums; }
+  table.opusT { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 12.5px; }
+  table.opusT td:nth-child(2) { min-width: 168px; }
+  table.opusT th { background: transparent; border-bottom: 1px solid var(--line-fuerte); padding: 5px 7px; font-size: 9.5px; }
+  table.opusT td { padding: 5px 7px; border-bottom: 1px solid var(--line); }
+  table.opusT td.n, table.opusT th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.opusT td.n { font-family: var(--font-num); }
+  table.opusT td.clave { font-family: var(--font-num); font-size: 11.5px; color: var(--fg-soft); white-space: nowrap; }
+  table.opusT tr.cuadrilla-renglon td { background: var(--panel); font-weight: 600; }
+  table.opusT tr.miembro td:nth-child(2) { padding-left: 18px; }
+  table.opusT tr.suma td { border-top: 1px solid var(--line-fuerte); border-bottom: none; font-weight: 600; }
+  .columna-derecha { display: grid; gap: 16px; align-content: start; }
+  .medido { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); }
+  .medido .enc { display: flex; align-items: baseline; gap: 8px; }
+  .medido .enc h4 { margin: 0; flex: 1; }
+  button.ajustar { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font: inherit; font-weight: 600; font-size: 12px; padding: 5px 10px; cursor: pointer; margin-top: 8px; }
+
+  /* --- telefono --- */
+  .testigo { display: grid; gap: 14px; }
+  @media (min-width: 1080px) { .testigo { position: sticky; top: 16px; } }
+  .testigo h3 { font-family: var(--font-head); font-size: 14px; margin: 0; }
+  .testigo .quien { font-size: 12.5px; color: var(--fg-soft); margin: 2px 0 0; }
+  .phone { background: var(--chrome); border-radius: 30px; padding: 9px; box-shadow: 0 20px 40px -18px rgba(0,0,0,.45); max-width: 332px; }
+  .screen { background: var(--panel); border-radius: 23px; overflow: hidden; display: flex; flex-direction: column; height: 500px; }
+  .statusbar { display: flex; justify-content: space-between; padding: 7px 16px 0; font-size: 10.5px; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+  .appbar { padding: 4px 14px 10px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .appbar h4 { font-family: var(--font-head); font-size: 16px; margin: 0; flex: 1; }
+  .ptotal { margin: 10px 14px 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .ptotal .cifra { font-size: 22px; }
+  .ptotal .meta { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--fg-soft); margin-top: 4px; }
+  .pfeed { flex: 1; overflow-y: auto; padding: 10px 14px 16px; }
+  .pitem { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 7px; transition: background .6s ease, border-color .6s ease; }
+  .pitem.fresca { border-color: var(--accent); background: var(--accent-soft); }
+  .pitem .arriba { display: flex; gap: 8px; align-items: baseline; }
+  .pitem .nombre { font-weight: 600; font-size: 12.5px; flex: 1; min-width: 0; }
+  .pitem .imp { font-family: var(--font-num); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pitem .det { font-size: 11px; color: var(--fg-soft); margin-top: 2px; }
+
+  .nota { border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--panel); border-radius: 12px; padding: 12px 14px; }
+  .nota h3 { margin: 0 0 4px; font-family: var(--font-head); font-size: 14px; }
+  .nota p { margin: 0; font-size: 13.5px; color: var(--fg-soft); }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    width: min(580px, calc(100vw - 32px));
+    background: var(--chrome); color: #f5f3ec; border-radius: 12px;
+    padding: 11px 14px; font-size: 13.5px; box-shadow: 0 14px 28px -14px rgba(0,0,0,.6);
+  }
+  .toast b { color: #ffb495; }
+</style>
+</head>
+<body>
+
+<div class="barra">
+  <div class="adentro">
+    <div class="marca">ROCAL <span>· Destajos</span></div>
+    <div class="obra">Torre Catalina · Frente norte</div>
+    <div class="derecha">
+      <label>Municipio
+        <select id="selMunicipio"></select>
+      </label>
+      <span>Oficina · M. Cortés</span>
+      <span class="pill"><span class="dot"></span>En vivo</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="vistas">
+    <button type="button" data-vista="semana" class="activa">Semana en curso</button>
+    <button type="button" data-vista="catalogo">Catálogo<span class="cuenta" id="cuentaPropuestas">0</span></button>
+    <button type="button" data-vista="obras">Obras</button>
+    <button type="button" data-vista="mercado">Mercado</button>
+  </nav>
+
+  <div class="mesa" id="vistaSemana">
+
+    <section>
+      <div class="titulo">
+        <h1>Catálogo de destajos</h1>
+        <span class="lbl" style="padding-bottom:5px">Semana 16 – 20 NOV 2026</span>
+      </div>
+      <p class="sub">Oficina administra aquí los conceptos de la semana. Cada uno se despliega: quién lo trabaja, cuánto rinde la cuadrilla al día y cuánto cuesta la mano de obra con los jornales del municipio donde está la obra. Lo que se cambia, el residente lo ve en su teléfono al momento.</p>
+
+      <div class="tiras">
+        <div class="tira">
+          <div class="lbl">Importe de la semana</div>
+          <div class="cifra" id="totalSemana">$0</div>
+        </div>
+        <div class="tira">
+          <div class="lbl">Mano de obra estimada</div>
+          <div class="cifra" id="totalMO">$0</div>
+        </div>
+        <div class="tira">
+          <div class="lbl">Margen de la semana</div>
+          <div class="cifra" id="margenSemana">0%</div>
+        </div>
+        <div class="tira">
+          <div class="lbl">Avances reportados hoy</div>
+          <div class="cifra" id="avanceHoy">0</div>
+        </div>
+      </div>
+
+      <div class="tabla-caja">
+        <div class="tabla-top">
+          <h2>Conceptos</h2>
+          <span class="de-donde" id="deDonde">Precios unitarios del catálogo SPM 2026</span>
+          <button class="primario" id="btnNuevo" type="button">+ Concepto</button>
+        </div>
+        <div class="scroller">
+          <table class="principal">
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th>Un.</th>
+                <th class="num">Cantidad</th>
+                <th class="num">P.U.</th>
+                <th class="num">Importe</th>
+                <th class="num">M.O. / un.</th>
+                <th class="num">Margen</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpo"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="nota" style="margin-top:20px">
+        <h3>De dónde sale cada número</h3>
+        <p>El precio unitario es el del catálogo. El rendimiento es lo que la cuadrilla saca en una jornada buena, y el índice de variabilidad le descuenta lo que no sale: clima, retrabajos, acarreo largo, esperar material. La mano de obra por unidad es la jornada de la cuadrilla entre ese rendimiento ya castigado, con los jornales del municipio seleccionado. El margen es lo que queda del precio unitario después de pagarla.</p>
+      </div>
+    </section>
+
+    <aside class="testigo">
+      <div>
+        <h3>Lo que ve la obra ahorita</h3>
+        <p class="quien">J. Ortega · residente · viendo esta semana</p>
+      </div>
+
+      <p class="quien" style="margin:-6px 0 0"><a href="./movil.html" target="_blank" rel="noopener">Abrir la pantalla del residente ↗</a></p>
+
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span id="reloj">14:08</span><span>4G</span></div>
+          <div class="appbar">
+            <h4>Destajos</h4>
+            <span class="pill"><span class="dot"></span>En vivo</span>
+          </div>
+          <div class="ptotal">
+            <div class="lbl">Semana 16 – 20 nov</div>
+            <div class="cifra" id="pTotal">$0</div>
+            <div class="meta"><span id="pConteo">0 conceptos</span><span id="pSincro">al día</span></div>
+          </div>
+          <div class="pfeed" id="pFeed"></div>
+        </div>
+      </div>
+
+      <div class="nota">
+        <h3>Pruébalo</h3>
+        <p>Abre un concepto para ver su cuadrilla. Cambia el municipio arriba y mira cómo se mueven los jornales y el margen.</p>
+        <div class="controles">
+          <button class="secundario" id="btnAvance" type="button">El residente reporta avance</button>
+          <button class="secundario" id="btnVariabilidad" type="button">Subir la variabilidad</button>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+  <section id="vistaCatalogo" hidden>
+    <div class="titulo"><h1>Catálogo de conceptos</h1></div>
+    <p class="sub">Los conceptos que ya están establecidos y su precio vigente. Lo que la obra mide semana con semana propone cambios aquí; se aplican solos o los revisa alguien, según cómo esté puesto el interruptor.</p>
+
+    <div class="interruptor">
+      <label style="flex-direction:row; align-items:center; gap:8px; font-size:13.5px; color:var(--fg)">
+        <input type="checkbox" id="autoCatalogo" style="width:18px; height:18px">
+        Aplicar solo lo que ya tiene respaldo
+      </label>
+      <span class="texto" id="textoAuto">Apagado: todo cambio espera a que alguien lo apruebe. <b>Encendido</b>: las propuestas con 20 jornadas medidas o más se aplican solas y nada más se avisa.</span>
+    </div>
+
+    <h2 class="lbl" style="margin-bottom:4px">Cambios por revisar</h2>
+    <p class="sub" style="margin-bottom:12px">Nadie las escribe: cada noche se revisa lo capturado en todas las obras y lo que se sale de lo esperado se levanta aquí, con la cuenta de jornadas que lo respalda. Cada tarjeta dice de qué consulta salió.</p>
+    <div class="tarjetas" id="propuestas"></div>
+
+    <h2 class="lbl" style="margin:26px 0 10px">Conceptos establecidos</h2>
+    <div class="tabla-caja">
+      <div class="scroller">
+        <table class="principal">
+          <thead><tr>
+            <th>Clave</th><th>Concepto</th><th>Un.</th>
+            <th class="num">P.U. vigente</th><th class="num">Rend. base</th>
+            <th>Vigente desde</th><th>Origen</th>
+          </tr></thead>
+          <tbody id="cuerpoCatalogo"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="pie" style="margin-top:12px; font-size:12.5px; color:var(--fg-soft)">Los precios vienen del catálogo SPM 2026. Un concepto ajustado guarda de dónde salió el ajuste y quién lo aprobó.</p>
+  </section>
+
+  <section id="vistaObras" hidden>
+    <div class="titulo"><h1>Obras</h1></div>
+    <p class="sub">Dónde se está llevando el destajo ahorita y quién lo lleva. Se ve de un vistazo la obra que no ha capturado en el día.</p>
+
+    <div class="tiras">
+      <div class="tira"><div class="lbl">Obras activas</div><div class="cifra" id="oActivas">0</div></div>
+      <div class="tira"><div class="lbl">Capturando hoy</div><div class="cifra" id="oHoy">0</div></div>
+      <div class="tira"><div class="lbl">Destajo de la semana</div><div class="cifra" id="oImporte">$0</div></div>
+    </div>
+
+    <div class="tarjetas" id="obras"></div>
+    <p class="pie" style="margin-top:14px; font-size:12.5px; color:var(--fg-soft)">En la maqueta las obras están puestas a mano. De verdad saldrían del padrón de obras, con su residente y su municipio; aquí nada más se le colgaría el destajo de cada una.</p>
+  </section>
+
+  <section id="vistaMercado" hidden>
+    <div class="titulo"><h1>Mercado</h1></div>
+    <p class="sub">De dónde se alimenta el jornal. No es una opinión: son lecturas de fuentes públicas, cada una con su liga y su fecha, para que quien aprueba juzgue la fuente y no el resumen. El precio de cada concepto no se toca aquí: se recalcula con la matriz cuando cambia el jornal.</p>
+
+    <div class="tiras">
+      <div class="tira"><div class="lbl">Fuentes conectadas</div><div class="cifra" id="mFuentes">0</div></div>
+      <div class="tira"><div class="lbl">Última lectura</div><div class="cifra" id="mCuando">—</div></div>
+      <div class="tira"><div class="lbl">Jornal base hoy</div><div class="cifra" id="mJornal">$0</div></div>
+    </div>
+
+    <h2 class="lbl" style="margin-bottom:10px">Lo que traen las fuentes</h2>
+    <div class="tarjetas" id="fuentes"></div>
+
+    <h2 class="lbl" style="margin:26px 0 10px">Lo que proponen entre todas</h2>
+    <div class="tarjetas" id="propuestaMercado"></div>
+
+    <h2 class="lbl" style="margin:26px 0 10px">Fuentes que no se leen</h2>
+    <div class="tarjetas" id="fuentesMuertas"></div>
+    <p class="pie" style="margin-top:14px; font-size:12.5px; color:var(--fg-soft)">La lectura corre una vez al mes: el jornal se mueve por año, no por día. Nada de lo que entra por aquí se aplica solo, ni con el interruptor del catálogo encendido, y un movimiento mayor al 5% en un mes se detiene aunque venga respaldado.</p>
+  </section>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  var pesos = function (n, dec) {
+    return '$' + Number(n).toLocaleString('es-MX', {
+      minimumFractionDigits: dec == null ? 0 : dec,
+      maximumFractionDigits: dec == null ? 0 : dec
+    });
+  };
+  var escapar = function (t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  /* Salario diario base por puesto, en la zona de referencia (Jalisco).
+   * Cada municipio lo mueve con su factor: la misma cuadrilla cuesta distinto
+   * segun donde este la obra, y el margen del destajo se mueve con ella. */
+  var PUESTOS = {
+    cabo:     { clave: 'MOCA-013', nombre: 'Cabo de oficios', corto: 'cabo', plural: 'cabos', base: 750 },
+    maestro:  { clave: 'MOCA-001', nombre: 'Maestro albañil', corto: 'maestro', plural: 'maestros', base: 850 },
+    albanil:  { clave: 'MOCA-014', nombre: 'Albañil', corto: 'albañil', plural: 'albañiles', base: 650 },
+    ayudante: { clave: 'MOCA-002', nombre: 'Ayudante general', corto: 'ayudante', plural: 'ayudantes', base: 450 }
+  };
+  var ORDEN = ['cabo', 'maestro', 'albanil', 'ayudante'];
+
+  // Herramienta menor: el 3% de la mano de obra, como se carga en la matriz.
+  var HERRAMIENTA = 0.03;
+
+  /* Las obras son de Tlaxcala; lo que cambia es el municipio. El factor no es
+   * el salario minimo de la zona: es lo que de verdad mueve el jornal dentro
+   * del estado, el traslado de la gente y que haya o no cuadrillas libres
+   * cerca. Calpulalpan jala para arriba por la cercania con el Edomex. */
+  var MUNICIPIOS = [
+    { clave: 'tlax', nombre: 'Tlaxcala', factor: 1.00 },
+    { clave: 'apiz', nombre: 'Apizaco', factor: 1.02 },
+    { clave: 'chia', nombre: 'Chiautempan', factor: 1.00 },
+    { clave: 'huam', nombre: 'Huamantla', factor: 0.98 },
+    { clave: 'calp', nombre: 'Calpulalpan', factor: 1.06 },
+    { clave: 'tlco', nombre: 'Tlaxco', factor: 1.03 },
+    { clave: 'zaca', nombre: 'Zacatelco', factor: 0.97 },
+    { clave: 'spm', nombre: 'San Pablo del Monte', factor: 0.96 },
+    { clave: 'nati', nombre: 'Nativitas', factor: 0.97 }
+  ];
+  var municipio = MUNICIPIOS[0];
+
+  /* Conceptos del catalogo SPM 2026 (actividad, unidad y precio unitario tal
+   * como vienen). La cuadrilla, el rendimiento y la variabilidad son de la
+   * maqueta: es justo lo que habria que capturar concepto por concepto. */
+  /* Concepto, unidad y precio unitario salen del catalogo SPM 2026. La
+   * cuadrilla y el rendimiento son los de la matriz; "medido" es lo que la
+   * obra ha reportado en las ultimas semanas, y de ahi sale solo el indice
+   * de variabilidad en lugar de ponerlo a mano. */
+  var conceptos = [
+    { id: 1, clave: '1.01', nombre: 'MURO DE TABIQUE', unidad: 'M2', pu: 120, cantidad: 186,
+      cuadrillaClave: 'MOCU-002', cuadrilla: { cabo: 0.1, albanil: 2, ayudante: 2 },
+      rend: 24, variabilidad: 0.08, medido: { rend: 21.6, jornadas: 46 } },
+    { id: 2, clave: '1.02', nombre: 'FIRME DE 8 CM', unidad: 'M2', pu: 110, cantidad: 142,
+      cuadrillaClave: 'MOCU-004', cuadrilla: { cabo: 0.1, albanil: 2, ayudante: 3 },
+      rend: 32, variabilidad: 0.12, medido: { rend: 29.4, jornadas: 31 } },
+    { id: 3, clave: '2.03', nombre: 'APLANADO FINO A ALT. MAXIMA DE 3M', unidad: 'M2', pu: 20, cantidad: 310,
+      cuadrillaClave: 'MOCU-005', cuadrilla: { cabo: 0.1, albanil: 1, ayudante: 1 },
+      rend: 80, variabilidad: 0.12, medido: { rend: 72.5, jornadas: 54 } },
+    { id: 4, clave: '1.07', nombre: 'ARMADO DE CASTILLO 15 X 15', unidad: 'M', pu: 60, cantidad: 96,
+      cuadrillaClave: 'MOCU-005', cuadrilla: { cabo: 0.1, albanil: 1, ayudante: 1 },
+      rend: 26, variabilidad: 0.10, medido: { rend: 24.1, jornadas: 28 } },
+    { id: 5, clave: '1.11', nombre: 'CIMBRADO', unidad: 'M2', pu: 150, cantidad: 88,
+      cuadrillaClave: 'MOCU-008', cuadrilla: { cabo: 0.1, maestro: 0.5, albanil: 2, ayudante: 2 },
+      rend: 26, variabilidad: 0.14, medido: { rend: 21.8, jornadas: 22 } },
+    { id: 6, clave: '3.01', nombre: 'EXCAVACION DE CEPAS', unidad: 'M3', pu: 120, cantidad: 54,
+      cuadrillaClave: 'MOCU-011', cuadrilla: { cabo: 0.1, ayudante: 4 },
+      rend: 22, variabilidad: 0.15, medido: { rend: 18.1, jornadas: 17 } },
+    { id: 7, clave: '1.14', nombre: 'VACIADO DE CONCRETO CON VIBRADO', unidad: 'M3', pu: 250, cantidad: 38,
+      cuadrillaClave: 'MOCU-014', cuadrilla: { cabo: 0.1, maestro: 0.5, albanil: 1, ayudante: 5 },
+      rend: 20, variabilidad: 0.20, medido: { rend: 15.4, jornadas: 12 } }
+  ];
+
+  var nuevos = [
+    { clave: '2.01', nombre: 'REPELLADO DE MURO A ALTURA MAXIMA DE 3M', unidad: 'M2', pu: 95, cantidad: 120,
+      cuadrillaClave: 'MOCU-002', cuadrilla: { cabo: 0.1, albanil: 2, ayudante: 2 },
+      rend: 32, variabilidad: 0.10, medido: { rend: 28.4, jornadas: 19 } },
+    { clave: '3.04', nombre: 'RELLENO Y COMPACTACIÓN', unidad: 'M3', pu: 110, cantidad: 64,
+      cuadrillaClave: 'MOCU-011', cuadrilla: { cabo: 0.1, ayudante: 4 },
+      rend: 24, variabilidad: 0.15, medido: { rend: 20.8, jornadas: 15 } },
+    { clave: '0.01', nombre: 'TRAZO Y NIVELACION', unidad: 'M2', pu: 4.5, cantidad: 420,
+      cuadrillaClave: 'MOCU-001', cuadrilla: { cabo: 0.1, maestro: 0.5, ayudante: 2 },
+      rend: 420, variabilidad: 0.10, medido: { rend: 381, jornadas: 9 } }
+  ];
+
+  var proximoId = 8;
+  var cursorNuevos = 0;
+  var abiertas = {};
+  var frescas = {};
+  var avancesHoy = 0;
+  var desdeCambio = 0;
+
+  // --- cuentas ---------------------------------------------------------
+
+  var salario = function (puesto) { return PUESTOS[puesto].base * municipio.factor; };
+
+  // Lo que cuesta un dia de esa cuadrilla con los jornales del municipio.
+  function jornada(c) {
+    var total = 0;
+    for (var puesto in c.cuadrilla) total += c.cuadrilla[puesto] * salario(puesto);
+    return total;
+  }
+  // El rendimiento de verdad: el de la matriz, menos lo que la obra se come.
+  function rendEfectivo(c) { return c.rend * (1 - c.variabilidad); }
+  /* Jornadas de cuadrilla por unidad: el renglon que la matriz pone como
+   * "cantidad" de la cuadrilla, que es el reciproco del rendimiento. Si la
+   * cuadrilla saca 22.08 M2 al dia, cada M2 se lleva 0.045290 de jornada. */
+  function jornadasPorUnidad(c) {
+    var r = rendEfectivo(c);
+    return r > 0 ? 1 / r : 0;
+  }
+  function manoDeObraUnitaria(c) { return jornadasPorUnidad(c) * jornada(c); }
+  function herramientaUnitaria(c) { return manoDeObraUnitaria(c) * HERRAMIENTA; }
+  // Lo que cuesta de verdad cada unidad del destajo.
+  function costoUnitario(c) { return manoDeObraUnitaria(c) + herramientaUnitaria(c); }
+  function margen(c) { return c.pu > 0 ? (c.pu - costoUnitario(c)) / c.pu : 0; }
+  // La variabilidad que sale sola de lo que la obra ya reporto.
+  function variabilidadMedida(c) {
+    if (!c.medido || !c.rend) return null;
+    return Math.max(0, 1 - c.medido.rend / c.rend);
+  }
+  function numero(n, dec) {
+    return Number(n).toLocaleString('es-MX', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  }
+  function describeCuadrilla(c) {
+    return ORDEN.filter(function (p) { return c.cuadrilla[p]; }).map(function (p) {
+      var n = c.cuadrilla[p];
+      return n + ' ' + (n > 1 ? PUESTOS[p].plural : PUESTOS[p].corto);
+    }).join(' + ');
+  }
+  var importe = function (c) { return Number(c.cantidad) * Number(c.pu); };
+  var manoDeObra = function (c) { return Number(c.cantidad) * costoUnitario(c); };
+
+  var totalSemana = function () { return conceptos.reduce(function (s, c) { return s + importe(c); }, 0); };
+  var totalMO = function () { return conceptos.reduce(function (s, c) { return s + manoDeObra(c); }, 0); };
+
+  var buscar = function (id) {
+    for (var i = 0; i < conceptos.length; i++) if (conceptos[i].id === id) return conceptos[i];
+    return null;
+  };
+
+  /* Los renglones de la cuadrilla, con las columnas de la matriz: la
+   * cantidad de cada puesto y su rendimiento son reciprocos, por eso el cabo
+   * que anda en diez frentes entra con 0.100000 y rendimiento 10.000000. */
+  function pintaCuadrilla(c) {
+    return ORDEN.filter(function (p) { return c.cuadrilla[p]; }).map(function (p) {
+      var cuantos = c.cuadrilla[p];
+      return '<tr class="miembro">' +
+        '<td class="clave">' + PUESTOS[p].clave + '</td>' +
+        '<td>' + PUESTOS[p].nombre + '</td>' +
+        '<td>jor</td>' +
+        '<td class="n">' + numero(cuantos, 6) + '</td>' +
+        '<td class="n">' + numero(1 / cuantos, 6) + '</td>' +
+        '<td class="n">' + pesos(salario(p), 2) + '</td>' +
+        '<td class="n">' + pesos(cuantos * salario(p), 2) + '</td></tr>';
+    }).join('');
+  }
+
+  // --- tabla -----------------------------------------------------------
+
+  function pintarTabla() {
+    $('cuerpo').innerHTML = conceptos.map(function (c) {
+      var m = margen(c);
+      var pillClase = m < 0.08 ? 'pill malo' : 'pill';
+      var abierta = !!abiertas[c.id];
+
+      var fila =
+        '<tr data-fila="' + c.id + '"' + (frescas[c.id] ? ' class="fresca"' : '') + '>' +
+          '<td class="concepto">' +
+            '<button class="abrir" type="button" data-abrir="' + c.id + '">' +
+              '<span class="flecha">' + (abierta ? '▾' : '▸') + '</span>' +
+              '<span class="texto">' + escapar(c.nombre) + '</span>' +
+            '</button>' +
+            '<span class="cuadrilla">' + resumenCuadrilla(c) +
+              (c.porQuien ? ' · <span class="marca-avance">actualizó ' + escapar(c.porQuien) + '</span>' : '') +
+            '</span>' +
+          '</td>' +
+          '<td>' + escapar(c.unidad) + '</td>' +
+          '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="cantidad" data-id="' + c.id + '" value="' + c.cantidad + '"></td>' +
+          '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="pu" data-id="' + c.id + '" value="' + c.pu + '"></td>' +
+          '<td class="importe num" data-importe="' + c.id + '">' + pesos(importe(c)) + '</td>' +
+          '<td class="importe num" data-mo="' + c.id + '">' + pesos(costoUnitario(c), 2) + '</td>' +
+          '<td class="num"><span class="' + pillClase + '" data-margen="' + c.id + '">' + (m * 100).toFixed(0) + '%</span></td>' +
+        '</tr>';
+
+      return abierta ? fila + filaDetalle(c) : fila;
+    }).join('');
+  }
+
+  function resumenCuadrilla(c) {
+    return c.cuadrillaClave + ' · ' + describeCuadrilla(c);
+  }
+
+  function filaDetalle(c) {
+    var m = margen(c);
+    var mo = manoDeObraUnitaria(c);
+    var herr = herramientaUnitaria(c);
+    var vMedida = variabilidadMedida(c);
+    var yaAjustado = vMedida !== null && Math.abs(vMedida - c.variabilidad) < 0.005;
+
+    return '<tr class="detalle"><td colspan="7"><div class="opus">' +
+
+      '<div class="bloque">' +
+        '<h4>' + escapar(c.clave) + ' · Análisis del precio unitario</h4>' +
+        '<div class="insumos">' +
+          '<div class="ins activo"><span class="k">Mano de obra</span><span class="v">' + pesos(mo, 2) + '</span></div>' +
+          '<div class="ins"><span class="k">Herramienta</span><span class="v">' + pesos(herr, 2) + '</span></div>' +
+          '<div class="ins apagado"><span class="k">Materiales</span><span class="v">0.00</span></div>' +
+          '<div class="ins apagado"><span class="k">Equipos</span><span class="v">0.00</span></div>' +
+          '<div class="ins"><span class="k">Todos</span><span class="v">' + pesos(costoUnitario(c), 2) + '</span></div>' +
+        '</div>' +
+        '<table class="opusT"><thead><tr>' +
+          '<th>Clave</th><th>Descripción</th><th>Unidad</th>' +
+          '<th class="n">Cantidad</th><th class="n">Rendimiento</th>' +
+          '<th class="n">Costo unitario</th><th class="n">Total</th>' +
+        '</tr></thead><tbody>' +
+          '<tr class="cuadrilla-renglon">' +
+            '<td class="clave">' + escapar(c.cuadrillaClave) + '</td>' +
+            '<td>Cuadrilla (' + escapar(describeCuadrilla(c)) + ')</td>' +
+            '<td>jor</td>' +
+            '<td class="n">' + numero(jornadasPorUnidad(c), 6) + '</td>' +
+            '<td class="n">' + numero(rendEfectivo(c), 6) + '</td>' +
+            '<td class="n">' + pesos(jornada(c), 2) + '</td>' +
+            '<td class="n">' + pesos(mo, 2) + '</td>' +
+          '</tr>' +
+          pintaCuadrilla(c) +
+          '<tr><td class="clave">HERR-001</td><td>Herramienta menor</td><td>%</td>' +
+            '<td class="n">' + numero(3, 6) + '</td><td class="n">—</td>' +
+            '<td class="n">' + pesos(mo, 2) + '</td><td class="n">' + pesos(herr, 2) + '</td></tr>' +
+          '<tr class="suma"><td></td><td>Costo directo por ' + escapar(c.unidad) + '</td>' +
+            '<td></td><td class="n"></td><td class="n"></td><td class="n"></td>' +
+            '<td class="n">' + pesos(costoUnitario(c), 2) + '</td></tr>' +
+        '</tbody></table>' +
+        '<p class="pie">La cantidad de la cuadrilla es el recíproco del rendimiento: ' +
+          numero(jornadasPorUnidad(c), 6) + ' jornadas por ' + escapar(c.unidad) + '. ' +
+          'Los jornales son los de ' + escapar(municipio.nombre) + '.</p>' +
+      '</div>' +
+
+      '<div class="columna-derecha">' +
+        '<div class="bloque">' +
+          '<h4>Rendimiento</h4>' +
+          '<div class="renglon"><span>De la matriz</span><span class="v">' + numero(c.rend, 2) + ' ' + escapar(c.unidad) + '/jor</span></div>' +
+          '<div class="renglon"><span>Índice de variabilidad</span><span class="v">− ' + (c.variabilidad * 100).toFixed(0) + '%</span></div>' +
+          '<div class="renglon fuerte"><span>Rendimiento de cálculo</span><span class="v">' + numero(rendEfectivo(c), 2) + ' ' + escapar(c.unidad) + '/jor</span></div>' +
+          '<div class="medido" style="margin-top:10px">' +
+            '<div class="enc"><h4>Medido en obra</h4><span class="lbl">últimas 4 semanas</span></div>' +
+            '<div class="renglon"><span>Rendimiento real</span><span class="v">' + numero(c.medido.rend, 2) + ' ' + escapar(c.unidad) + '/jor</span></div>' +
+            '<div class="renglon"><span>Jornadas reportadas</span><span class="v">' + c.medido.jornadas + '</span></div>' +
+            '<div class="renglon"><span>Variabilidad que sale sola</span><span class="v">− ' + (vMedida * 100).toFixed(0) + '%</span></div>' +
+            (yaAjustado
+              ? '<p class="pie">El índice ya es el medido. Se recalcula solo con cada avance que reporta la obra.</p>'
+              : '<button class="ajustar" type="button" data-ajustar="' + c.id + '">Usar el medido (− ' + (vMedida * 100).toFixed(0) + '%)</button>') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="bloque">' +
+          '<h4>Lo que deja el destajo</h4>' +
+          '<div class="renglon"><span>Costo directo por ' + escapar(c.unidad) + '</span><span class="v">' + pesos(costoUnitario(c), 2) + '</span></div>' +
+          '<div class="renglon"><span>Precio unitario</span><span class="v">' + pesos(c.pu, 2) + '</span></div>' +
+          '<div class="renglon fuerte"><span>Queda por ' + escapar(c.unidad) + '</span><span class="v">' + pesos(c.pu - costoUnitario(c), 2) + '</span></div>' +
+          '<div class="renglon"><span>Margen</span><span class="v"><span class="' + (m < 0.08 ? 'pill malo' : 'pill') + '">' + (m * 100).toFixed(1) + '%</span></span></div>' +
+          '<p class="pie">' + (m < 0.08
+            ? 'Apretado: con los jornales de ' + escapar(municipio.nombre) + ' este precio casi no cubre la cuadrilla.'
+            : 'Sobre ' + pesos(c.cantidad * (c.pu - costoUnitario(c))) + ' en los ' + c.cantidad + ' ' + escapar(c.unidad) + ' de la semana.') +
+          '</p>' +
+        '</div>' +
+      '</div>' +
+
+    '</div></td></tr>';
+  }
+
+  function pintarResumen() {
+    var t = totalSemana(), mo = totalMO();
+    $('totalSemana').textContent = pesos(t);
+    $('totalMO').textContent = pesos(mo);
+    $('margenSemana').textContent = t > 0 ? (((t - mo) / t) * 100).toFixed(1) + '%' : '0%';
+    $('avanceHoy').textContent = avancesHoy;
+    $('deDonde').textContent = 'Catálogo SPM 2026 · jornales de ' + municipio.nombre + ' (factor ' + municipio.factor.toFixed(2) + ')';
+  }
+
+  function pintarTelefono() {
+    $('pFeed').innerHTML = conceptos.map(function (c) {
+      return '<div class="pitem' + (frescas[c.id] ? ' fresca' : '') + '">' +
+        '<div class="arriba"><span class="nombre">' + escapar(c.nombre) + '</span>' +
+        '<span class="imp">' + pesos(importe(c)) + '</span></div>' +
+        '<div class="det">' + Number(c.cantidad).toLocaleString('es-MX') + ' ' + escapar(c.unidad) +
+        ' × ' + pesos(c.pu, 2) + ' · ' + resumenCuadrilla(c) + '</div></div>';
+    }).join('');
+    $('pTotal').textContent = pesos(totalSemana());
+    $('pConteo').textContent = conceptos.length + (conceptos.length === 1 ? ' concepto' : ' conceptos');
+  }
+
+  function pintarTodo() { pintarTabla(); pintarResumen(); pintarTelefono(); }
+
+  function latir(el) {
+    el.classList.remove('bumped');
+    void el.offsetWidth;
+    el.classList.add('bumped');
+  }
+
+  var relojToast;
+  function avisar(html) {
+    $('toast').innerHTML = html;
+    $('toast').hidden = false;
+    clearTimeout(relojToast);
+    relojToast = setTimeout(function () { $('toast').hidden = true; }, 4500);
+  }
+
+  function marcar(id) {
+    frescas[id] = true;
+    setTimeout(function () { delete frescas[id]; pintarTabla(); pintarTelefono(); }, 6000);
+  }
+
+  /* Mientras alguien teclea no se redibuja la tabla: se tocan nada mas las
+   * celdas de ese renglon, para no quitarle el cursor de encima. */
+  function cambio(id) {
+    var c = buscar(id);
+    if (!c) return;
+    var celda = document.querySelector('[data-importe="' + id + '"]');
+    if (celda) celda.textContent = pesos(importe(c));
+    var mo = document.querySelector('[data-mo="' + id + '"]');
+    if (mo) mo.textContent = pesos(costoUnitario(c), 2);
+    var pm = document.querySelector('[data-margen="' + id + '"]');
+    if (pm) {
+      pm.textContent = (margen(c) * 100).toFixed(0) + '%';
+      pm.className = margen(c) < 0.08 ? 'pill malo' : 'pill';
+    }
+    pintarResumen();
+    pintarTelefono();
+    latir($('totalSemana'));
+    latir($('pTotal'));
+    desdeCambio = 0;
+  }
+
+  // --- lo que hace la gente ---------------------------------------------
+
+  $('cuerpo').addEventListener('input', function (e) {
+    var id = Number(e.target.dataset.id);
+    var campo = e.target.dataset.campo;
+    if (!id || !campo) return;
+    var c = buscar(id);
+    if (!c) return;
+    c[campo] = Number(e.target.value || 0);
+    c.porQuien = '';
+    cambio(id);
+  });
+
+  $('cuerpo').addEventListener('change', function (e) {
+    var id = Number(e.target.dataset.id);
+    if (!id) return;
+    var c = buscar(id);
+    if (!c) return;
+    if (abiertas[c.id]) pintarTabla();
+    avisar('<b>' + escapar(c.nombre) + '</b> quedó en ' + pesos(importe(c)) + '. J. Ortega ya lo ve en la obra.');
+  });
+
+  $('cuerpo').addEventListener('click', function (e) {
+    var ajuste = e.target.closest ? e.target.closest('[data-ajustar]') : null;
+    if (ajuste) {
+      var cc = buscar(Number(ajuste.dataset.ajustar));
+      if (cc) {
+        cc.variabilidad = variabilidadMedida(cc);
+        pintarTodo();
+        latir($('totalMO')); latir($('margenSemana'));
+        avisar('<b>' + escapar(cc.nombre) + '</b>: el índice quedó en ' + (cc.variabilidad * 100).toFixed(0) +
+          '%, el que sale de las ' + cc.medido.jornadas + ' jornadas que ya reportó la obra. Margen ' +
+          (margen(cc) * 100).toFixed(1) + '%.');
+      }
+      return;
+    }
+
+    var boton = e.target.closest ? e.target.closest('[data-abrir]') : null;
+    if (!boton) return;
+    var id = Number(boton.dataset.abrir);
+    if (abiertas[id]) delete abiertas[id]; else abiertas[id] = true;
+    pintarTabla();
+  });
+
+  $('selMunicipio').addEventListener('change', function () {
+    for (var i = 0; i < MUNICIPIOS.length; i++) {
+      if (MUNICIPIOS[i].clave === this.value) municipio = MUNICIPIOS[i];
+    }
+    pintarTodo();
+    latir($('totalMO'));
+    latir($('margenSemana'));
+    var t = totalSemana(), mo = totalMO();
+    avisar('Jornales de <b>' + escapar(municipio.nombre) + '</b> (factor ' + municipio.factor.toFixed(2) +
+      '). La mano de obra de la semana queda en ' + pesos(mo) + ' y el margen en ' +
+      (t > 0 ? (((t - mo) / t) * 100).toFixed(1) : '0') + '%.');
+  });
+
+  $('btnNuevo').addEventListener('click', function () {
+    var base = nuevos[cursorNuevos % nuevos.length];
+    cursorNuevos++;
+    var c = {
+      id: proximoId++, nombre: base.nombre, unidad: base.unidad, pu: base.pu,
+      cantidad: base.cantidad, clave: base.clave, cuadrillaClave: base.cuadrillaClave,
+      cuadrilla: base.cuadrilla, rend: base.rend, variabilidad: base.variabilidad,
+      medido: base.medido, porQuien: ''
+    };
+    conceptos.push(c);
+    marcar(c.id);
+    pintarTodo();
+    latir($('totalSemana')); latir($('pTotal'));
+    desdeCambio = 0;
+    avisar('Alta de <b>' + escapar(c.nombre) + '</b> · ' + pesos(importe(c)) + '. Apareció en el teléfono sin avisarle a nadie.');
+  });
+
+  /* El camino de regreso: el residente reporta avance desde el telefono y
+   * oficina lo ve llegar en su tabla, marcado con quien lo movio. */
+  function reporteDeObra() {
+    var c = conceptos[Math.floor(Math.random() * conceptos.length)];
+    if (!c) return;
+    var extra = Math.max(1, Math.round(c.cantidad * 0.08));
+    c.cantidad = Number(c.cantidad) + extra;
+    c.porQuien = 'J. Ortega';
+    avancesHoy++;
+    marcar(c.id);
+    pintarTodo();
+    latir($('totalSemana')); latir($('pTotal'));
+    desdeCambio = 0;
+    avisar('<b>J. Ortega</b> reportó ' + extra + ' ' + escapar(c.unidad) + ' más en ' + escapar(c.nombre) + '.');
+  }
+  $('btnAvance').addEventListener('click', reporteDeObra);
+
+  $('btnVariabilidad').addEventListener('click', function () {
+    var c = conceptos[Math.floor(Math.random() * conceptos.length)];
+    if (!c) return;
+    c.variabilidad = Math.min(0.45, c.variabilidad + 0.06);
+    abiertas[c.id] = true;
+    marcar(c.id);
+    pintarTodo();
+    latir($('totalMO')); latir($('margenSemana'));
+    avisar('<b>' + escapar(c.nombre) + '</b>: la variabilidad subió a ' + (c.variabilidad * 100).toFixed(0) +
+      '%. El rendimiento de cálculo baja a ' + rendEfectivo(c).toFixed(1) + ' ' + escapar(c.unidad) +
+      ' y el margen a ' + (margen(c) * 100).toFixed(1) + '%.');
+  });
+
+  // --- catálogo de conceptos --------------------------------------------
+
+  /* El catalogo vive aparte de la semana: la semana es lo que se esta
+   * trabajando, el catalogo es el precio al que se contrata. */
+  var catalogo = [
+    { clave: '1.01', nombre: 'MURO DE TABIQUE', unidad: 'M2', pu: 120, rend: 24, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '1.02', nombre: 'FIRME DE 8 CM', unidad: 'M2', pu: 110, rend: 32, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '1.07', nombre: 'ARMADO DE CASTILLO 15 X 15', unidad: 'M', pu: 60, rend: 26, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '1.11', nombre: 'CIMBRADO', unidad: 'M2', pu: 150, rend: 26, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '1.14', nombre: 'VACIADO DE CONCRETO CON VIBRADO', unidad: 'M3', pu: 250, rend: 20, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '2.01', nombre: 'REPELLADO DE MURO A ALTURA MAXIMA DE 3M', unidad: 'M2', pu: 95, rend: 32, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '2.03', nombre: 'APLANADO FINO A ALT. MAXIMA DE 3M', unidad: 'M2', pu: 20, rend: 80, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '3.01', nombre: 'EXCAVACION DE CEPAS', unidad: 'M3', pu: 120, rend: 22, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '3.04', nombre: 'RELLENO Y COMPACTACIÓN', unidad: 'M3', pu: 110, rend: 24, desde: '01 ene 2026', origen: 'SPM 2026' },
+    { clave: '0.01', nombre: 'TRAZO Y NIVELACION', unidad: 'M2', pu: 4.5, rend: 420, desde: '01 ene 2026', origen: 'SPM 2026' }
+  ];
+
+  /* Cada propuesta trae de donde salio y con cuantas jornadas medidas: eso es
+   * lo que decide si se puede aplicar sola o si alguien tiene que verla. */
+  var propuestas = [
+    { id: 'p1', clave: '3.01', titulo: 'EXCAVACION DE CEPAS rinde menos de lo que dice la matriz',
+      fuente: '2 obras · 29 jornadas medidas', jornadas: 29,
+      texto: 'La cuadrilla saca 18.1 M3 por jornada, no 22. A ese ritmo el precio de $120 deja 4% en lugar de 14%.',
+      efecto: 'Rendimiento base 22 → 18.5 · P.U. $120.00 → $128.00', campo: 'pu', valor: 128, rendNuevo: 18.5, estado: 'pendiente',
+      regla: 'Sale de dividir lo capturado entre las jornadas de cuadrilla. Se levanta cuando lo medido se aparta más de 10% de la matriz, con 20 jornadas o más y en dos obras cuando menos.' },
+    { id: 'p2', clave: '2.03', titulo: 'APLANADO FINO se está pagando arriba en Calpulalpan',
+      fuente: 'Obra Calpulalpan · 3 semanas', jornadas: 16,
+      texto: 'Ninguna cuadrilla toma el destajo a $20. Las tres últimas se contrataron a $23.',
+      efecto: 'P.U. $20.00 → $23.00 solo en Calpulalpan', campo: 'pu', valor: 23, estado: 'pendiente',
+      regla: 'Sale del precio al que se cerró el destajo contra el del catálogo. Se levanta con tres contrataciones seguidas por arriba en el mismo municipio.' },
+    { id: 'p3', clave: '—', titulo: 'DESEMBOQUILLADO DE COLUMNA no está en el catálogo',
+      fuente: 'Capturado por J. Ortega en Apizaco', jornadas: 4,
+      texto: 'El residente lo capturó a mano dos veces esta semana. En el catálogo SPM viene a $40 por ML.',
+      efecto: 'Alta del concepto · ML · $40.00', campo: 'alta', valor: 40, estado: 'pendiente',
+      regla: 'Sale de los conceptos que el residente escribe a mano en vez de elegirlos. Se agrupa el texto sin acentos ni mayúsculas y se busca en el catálogo SPM para proponerle unidad y precio.' }
+  ];
+
+  var autoCatalogo = false;
+
+  function pintarCatalogo() {
+    $('cuerpoCatalogo').innerHTML = catalogo.map(function (k) {
+      return '<tr><td class="importe">' + escapar(k.clave) + '</td>' +
+        '<td class="concepto" style="font-weight:600">' + escapar(k.nombre) + '</td>' +
+        '<td>' + escapar(k.unidad) + '</td>' +
+        '<td class="importe num">' + pesos(k.pu, 2) + '</td>' +
+        '<td class="importe num">' + numero(k.rend, 2) + ' ' + escapar(k.unidad) + '/jor</td>' +
+        '<td>' + escapar(k.desde) + '</td>' +
+        '<td style="font-size:12px; color:var(--fg-soft)">' + escapar(k.origen) + '</td></tr>';
+    }).join('');
+
+    $('propuestas').innerHTML = propuestas.map(function (pr) {
+      var puedeSola = pr.jornadas >= 20;
+      return '<div class="propuesta' + (pr.estado !== 'pendiente' ? ' aplicada' : '') + '">' +
+        '<h3>' + escapar(pr.titulo) + '</h3>' +
+        '<div class="de-donde2">' + escapar(pr.fuente) + (puedeSola ? ' · con respaldo' : ' · pocas jornadas todavía') + '</div>' +
+        '<p>' + escapar(pr.texto) + '</p>' +
+        '<div class="efecto">' + escapar(pr.efecto) + '</div>' +
+        (pr.regla ? '<p class="regla"><span>Cómo se detectó</span>' + escapar(pr.regla) + '</p>' : '') +
+        (pr.estado === 'pendiente'
+          ? '<div class="botones"><button class="primario" type="button" data-aprobar="' + pr.id + '">Aplicar</button>' +
+            '<button class="secundario" type="button" data-rechazar="' + pr.id + '">Dejarlo como está</button></div>'
+          : '<div class="botones"><span class="pill">' + escapar(pr.estado) + '</span></div>') +
+      '</div>';
+    }).join('') || '<p class="pie">Nada por revisar. Las propuestas salen solas de lo que la obra mide.</p>';
+
+    var pendientes = propuestas.filter(function (pr) { return pr.estado === 'pendiente'; }).length;
+    $('cuentaPropuestas').textContent = pendientes;
+    $('cuentaPropuestas').hidden = pendientes === 0;
+  }
+
+  function aplicarPropuesta(id, sola) {
+    var pr = null;
+    for (var i = 0; i < propuestas.length; i++) if (propuestas[i].id === id) pr = propuestas[i];
+    if (!pr || pr.estado !== 'pendiente') return;
+
+    if (pr.campo === 'alta') {
+      catalogo.push({ clave: '2.08', nombre: 'DESEMBOQUILLADO DE COLUMNA', unidad: 'ML', pu: pr.valor,
+        rend: 38, desde: 'hoy', origen: sola ? 'alta automática' : 'alta · M. Cortés' });
+    } else {
+      catalogo.forEach(function (k) {
+        if (k.clave === pr.clave) {
+          k.pu = pr.valor;
+          if (pr.rendNuevo) k.rend = pr.rendNuevo;
+          k.desde = 'hoy';
+          k.origen = sola ? 'ajuste automático' : 'ajuste · M. Cortés';
+        }
+      });
+      // El concepto de la semana se mueve con el catálogo, y la obra lo ve.
+      conceptos.forEach(function (c) {
+        if (c.clave === pr.clave) {
+          c.pu = pr.valor;
+          if (pr.rendNuevo) c.rend = pr.rendNuevo;
+          marcar(c.id);
+        }
+      });
+    }
+
+    pr.estado = sola ? 'aplicado solo' : 'aplicado por M. Cortés';
+    pintarCatalogo();
+    pintarTabla(); pintarResumen(); pintarTelefono();
+    avisar((sola ? 'Se aplicó solo: ' : 'Aplicado: ') + '<b>' + escapar(pr.clave === '—' ? 'alta de concepto' : pr.clave) +
+      '</b> · ' + escapar(pr.efecto) + '. La obra ya lo ve.');
+  }
+
+  $('propuestas').addEventListener('click', function (e) {
+    var ok = e.target.closest ? e.target.closest('[data-aprobar]') : null;
+    if (ok) { aplicarPropuesta(ok.dataset.aprobar, false); return; }
+    var no = e.target.closest ? e.target.closest('[data-rechazar]') : null;
+    if (no) {
+      for (var i = 0; i < propuestas.length; i++) {
+        if (propuestas[i].id === no.dataset.rechazar) propuestas[i].estado = 'se dejó igual';
+      }
+      pintarCatalogo();
+      avisar('Queda como está. La propuesta vuelve a salir si la obra sigue midiendo lo mismo.');
+    }
+  });
+
+  $('autoCatalogo').addEventListener('change', function () {
+    autoCatalogo = this.checked;
+    $('textoAuto').innerHTML = autoCatalogo
+      ? '<b>Encendido</b>: lo que trae 20 jornadas medidas o más se aplica solo. Lo demás sigue esperando a que alguien lo vea.'
+      : 'Apagado: todo cambio espera a que alguien lo apruebe. <b>Encendido</b>: las propuestas con 20 jornadas medidas o más se aplican solas y nada más se avisa.';
+    if (autoCatalogo) {
+      propuestas.forEach(function (pr) {
+        if (pr.estado === 'pendiente' && pr.jornadas >= 20) aplicarPropuesta(pr.id, true);
+      });
+    }
+  });
+
+  // --- obras --------------------------------------------------------------
+
+  var obras = [
+    { id: 1, nombre: 'Torre Catalina', municipio: 'Tlaxcala', residente: 'J. Ortega', programado: 79080, capturado: 52430, hace: 2, conceptos: 7 },
+    { id: 2, nombre: 'Nave industrial Xicohténcatl', municipio: 'Apizaco', residente: 'L. Rangel', programado: 112400, capturado: 61850, hace: 14, conceptos: 11 },
+    { id: 3, nombre: 'Ampliación del CECyTE', municipio: 'Huamantla', residente: 'A. Pérez', programado: 48600, capturado: 48600, hace: 55, conceptos: 5 },
+    { id: 4, nombre: 'Fraccionamiento Las Ánimas', municipio: 'Calpulalpan', residente: 'M. Juárez', programado: 96250, capturado: 23100, hace: 430, conceptos: 9 },
+    { id: 5, nombre: 'Drenaje colonia Loma Bonita', municipio: 'Zacatelco', residente: 'R. Sánchez', programado: 61900, capturado: 39740, hace: 7, conceptos: 6 }
+  ];
+  var obrasFrescas = {};
+
+  function haceTexto(min) {
+    if (min < 60) return 'hace ' + min + ' min';
+    if (min < 1440) return 'hace ' + Math.round(min / 60) + ' h';
+    return 'hace ' + Math.round(min / 1440) + ' d';
+  }
+
+  function pintarObras() {
+    $('obras').innerHTML = obras.map(function (o) {
+      var avance = o.programado > 0 ? Math.min(1, o.capturado / o.programado) : 0;
+      var alDia = o.hace <= 120;
+      return '<div class="obra-tarjeta' + (obrasFrescas[o.id] ? ' fresca' : '') + '">' +
+        '<div style="display:flex; align-items:baseline; gap:8px">' +
+          '<h3>' + escapar(o.nombre) + '</h3>' +
+          '<span class="' + (alDia ? 'pill' : 'pill malo') + '" style="margin-left:auto">' +
+            (alDia ? 'al día' : 'sin capturar') + '</span>' +
+        '</div>' +
+        '<div class="donde">' + escapar(o.municipio) + ' · ' + escapar(o.residente) + '</div>' +
+        '<div class="barra" style="height:5px; border-radius:999px; background:var(--line); overflow:hidden; margin:10px 0">' +
+          '<i style="display:block; height:100%; width:' + (avance * 100).toFixed(0) + '%; background:var(--accent)"></i></div>' +
+        '<div class="renglon"><span>Destajo de la semana</span><span class="v">' + pesos(o.capturado) + ' / ' + pesos(o.programado) + '</span></div>' +
+        '<div class="renglon"><span>Conceptos abiertos</span><span class="v">' + o.conceptos + '</span></div>' +
+        '<div class="renglon"><span>Última captura</span><span class="v">' + haceTexto(o.hace) + '</span></div>' +
+      '</div>';
+    }).join('');
+
+    $('oActivas').textContent = obras.length;
+    $('oHoy').textContent = obras.filter(function (o) { return o.hace <= 120; }).length;
+    $('oImporte').textContent = pesos(obras.reduce(function (a, o) { return a + o.capturado; }, 0));
+  }
+
+  // --- mercado ------------------------------------------------------------
+
+  /* Lecturas reales de noviembre de 2026. Cada una guarda la liga y la cita
+   * tal como venía: lo que se aprueba es la fuente, no el resumen. */
+  var fuentes = [
+    { nombre: 'Vacantes de la zona', que: 'Anuncios de albañil en Tlaxcala y Apizaco',
+      dato: 'Albañil en Apizaco · $10,000 – $14,000 al mes · tiempo completo',
+      cuando: 'leída hoy · 1 anuncio en el municipio',
+      url: 'https://mx.indeed.com/alba%C3%B1il-jobs?fromage=2', liga: 'indeed.com',
+      estado: 'al día' },
+    { nombre: 'Data México · ENOE', que: 'Salario por ocupación y entidad, del INEGI',
+      dato: 'Albañil · $9,457 al mes promedio nacional · +6.5% contra 2025',
+      cuando: 'leída hoy · dato de 2026',
+      url: 'https://www.elimparcial.com/dinero/2026/04/09/el-sueldo-promedio-del-albanil-en-mexico-alcanza-los-9457-pesos-mensuales-en-2026-aunque-la-brecha-de-genero-persiste-con-salarios-de-7760-pesos-para-mujeres-frente-a-los-8840-pesos-de-los-hombres/',
+      liga: 'elimparcial.com', estado: 'al día' },
+    { nombre: 'Salario mínimo en Tlaxcala', que: 'Referencia legal, no el jornal de la obra',
+      dato: 'Mínimo en Tlaxcala · $9,583 al mes · igual al nacional',
+      cuando: 'leída hoy · vigente 2026',
+      url: 'https://wage.is/mexico/tlaxcala/', liga: 'wage.is', estado: 'referencia' },
+    { nombre: 'Cómo cerraron los destajos', que: 'Lo pactado con las cuadrillas, de la propia operación',
+      dato: 'Sin capturar · falta el precio pactado al abrir el destajo',
+      cuando: 'no hay lecturas', url: '', liga: '', estado: 'falta' }
+  ];
+
+  var muertas = [
+    { nombre: 'Blogs de tabuladores', liga: 'oneestimate.ai',
+      url: 'https://oneestimate.ai/es/blog/tabulador-precios-albanileria-mexico-2026',
+      porque: 'Se contradice sola: da $420 – $720 por M2 de muro de tabique en una tabla y $45 – $85 en otra, sin decir unidad ni si trae material.' },
+    { nombre: 'Directorios de cotización', liga: 'habitissimo · cronoshare',
+      url: 'https://www.habitissimo.com.mx/presupuesto/construir-tabique/puebla',
+      porque: 'Mezclan material con mano de obra. $635 por M2 no se puede comparar contra un destajo de $120.' }
+  ];
+
+  var ajusteMercado = { aplicado: false, pct: 0.065 };
+
+  function pintarMercado() {
+    $('fuentes').innerHTML = fuentes.map(function (f) {
+      var clase = f.estado === 'falta' ? 'pill malo' : (f.estado === 'referencia' ? 'pill gris' : 'pill');
+      return '<div class="fuente' + (f.estado === 'falta' ? ' muerta' : '') + '">' +
+        '<div class="enc"><h3>' + escapar(f.nombre) + '</h3><span class="' + clase + '">' + escapar(f.estado) + '</span></div>' +
+        '<div class="que">' + escapar(f.que) + '</div>' +
+        '<div class="dato">' + escapar(f.dato) + '</div>' +
+        '<div class="cuando">' + escapar(f.cuando) + '</div>' +
+        (f.url ? '<a href="' + escapar(f.url) + '" target="_blank" rel="noopener">ver la fuente · ' + escapar(f.liga) + ' ↗</a>' : '') +
+      '</div>';
+    }).join('');
+
+    $('fuentesMuertas').innerHTML = muertas.map(function (f) {
+      return '<div class="fuente muerta">' +
+        '<div class="enc"><h3>' + escapar(f.nombre) + '</h3><span class="pill malo">no se lee</span></div>' +
+        '<div class="que">' + escapar(f.liga) + '</div>' +
+        '<div class="porque">' + escapar(f.porque) + '</div>' +
+        '<a href="' + escapar(f.url) + '" target="_blank" rel="noopener">ver por qué ↗</a>' +
+      '</div>';
+    }).join('');
+
+    var pct = ajusteMercado.pct;
+    var filas = ORDEN.map(function (k) {
+      var hoy = PUESTOS[k].base;
+      return '<tr><td class="clave">' + PUESTOS[k].clave + '</td><td>' + PUESTOS[k].nombre + '</td>' +
+        '<td class="n">' + pesos(hoy, 2) + '</td>' +
+        '<td class="n">' + (ajusteMercado.aplicado ? '—' : pesos(Math.round(hoy * (1 + pct)), 2)) + '</td></tr>';
+    }).join('');
+
+    $('propuestaMercado').innerHTML =
+      '<div class="propuesta' + (ajusteMercado.aplicado ? ' aplicada' : '') + '" style="grid-column:1/-1">' +
+        '<h3>El jornal de la zona subió ' + (pct * 100).toFixed(1) + '% en el año</h3>' +
+        '<div class="de-donde2">Data México marca +6.5% contra 2025 y el anuncio de Apizaco cae arriba del jornal que trae el catálogo · 2 fuentes de 4</div>' +
+        '<p>El precio de los conceptos no se toca a mano: se mueve el jornal base y la matriz recalcula los ' + conceptos.length + ' conceptos de la semana con su cuadrilla y su rendimiento.</p>' +
+        '<table class="opusT" style="margin-top:10px"><thead><tr>' +
+          '<th>Clave</th><th>Puesto</th><th class="n">Jornal hoy</th><th class="n">Propuesto</th>' +
+        '</tr></thead><tbody>' + filas + '</tbody></table>' +
+        (ajusteMercado.aplicado
+          ? '<div class="botones"><span class="pill">aplicado por M. Cortés · el catálogo ya trae el jornal nuevo</span></div>'
+          : '<div class="botones"><button class="primario" type="button" id="btnMercado">Aplicar al jornal base</button>' +
+            '<button class="secundario" type="button" id="btnMercadoNo">Dejarlo como está</button></div>') +
+        '<p class="regla"><span>De dónde salió</span>Lectura mensual de las fuentes de arriba. Ninguna se aplica sola: el interruptor automático del catálogo no alcanza a lo que entra por aquí, y un movimiento mayor al 5% en un mes se detiene aunque venga respaldado.</p>' +
+      '</div>';
+
+    $('mFuentes').textContent = fuentes.filter(function (f) { return f.estado !== 'falta'; }).length + ' de ' + fuentes.length;
+    $('mCuando').textContent = 'hoy';
+    $('mJornal').textContent = pesos(PUESTOS.albanil.base) + ' / jor';
+  }
+
+  $('propuestaMercado').addEventListener('click', function (e) {
+    if (e.target.id === 'btnMercadoNo') {
+      avisar('Queda como está. La lectura vuelve el mes que entra.');
+      return;
+    }
+    if (e.target.id !== 'btnMercado') return;
+
+    var antes = PUESTOS.albanil.base;
+    ORDEN.forEach(function (k) {
+      PUESTOS[k].base = Math.round(PUESTOS[k].base * (1 + ajusteMercado.pct));
+    });
+    ajusteMercado.aplicado = true;
+    pintarMercado();
+    pintarTodo();
+    pintarCatalogo();
+    latir($('totalMO'));
+    latir($('margenSemana'));
+    var t = totalSemana(), mo = totalMO();
+    avisar('Jornal del albañil ' + pesos(antes, 2) + ' → ' + pesos(PUESTOS.albanil.base, 2) +
+      '. La mano de obra de la semana queda en ' + pesos(mo) + ' y el margen en ' +
+      (t > 0 ? (((t - mo) / t) * 100).toFixed(1) : '0') + '%.');
+  });
+
+  // --- cambio de vista -----------------------------------------------------
+
+  document.querySelector('.vistas').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-vista]') : null;
+    if (!b) return;
+    var cual = b.dataset.vista;
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function (x) {
+      x.classList.toggle('activa', x === b);
+    });
+    $('vistaSemana').hidden = cual !== 'semana';
+    $('vistaCatalogo').hidden = cual !== 'catalogo';
+    $('vistaObras').hidden = cual !== 'obras';
+    $('vistaMercado').hidden = cual !== 'mercado';
+    if (cual === 'catalogo') pintarCatalogo();
+    if (cual === 'obras') pintarObras();
+    if (cual === 'mercado') pintarMercado();
+  });
+
+  // --- relojes ----------------------------------------------------------
+
+  setInterval(function () {
+    desdeCambio += 1;
+    $('pSincro').textContent = desdeCambio < 60
+      ? 'al día hace ' + desdeCambio + ' s'
+      : 'al día hace ' + Math.round(desdeCambio / 60) + ' min';
+    var d = new Date();
+    $('reloj').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }, 1000);
+
+  setInterval(reporteDeObra, 14000);
+
+  // El minutero de las obras, y cada tanto una captura que llega de alguna.
+  setInterval(function () {
+    obras.forEach(function (o) { o.hace += 1; });
+    if (!$('vistaObras').hidden) pintarObras();
+  }, 60000);
+
+  setInterval(function () {
+    var o = obras[Math.floor(Math.random() * obras.length)];
+    var monto = Math.round((o.programado - o.capturado) * 0.08);
+    if (monto <= 0) return;
+    o.capturado += monto;
+    o.hace = 0;
+    obrasFrescas[o.id] = true;
+    setTimeout(function () { delete obrasFrescas[o.id]; pintarObras(); }, 6000);
+    if (!$('vistaObras').hidden) {
+      pintarObras();
+      latir($('oImporte'));
+      avisar('<b>' + escapar(o.residente) + '</b> capturó ' + pesos(monto) + ' en ' + escapar(o.nombre) + '.');
+    }
+  }, 18000);
+
+  // --- arranque ----------------------------------------------------------
+
+  $('selMunicipio').innerHTML = MUNICIPIOS.map(function (e) {
+    return '<option value="' + e.clave + '">' + e.nombre + '</option>';
+  }).join('');
+
+  pintarTodo();
+  pintarCatalogo();
+  pintarObras();
+  pintarMercado();
+})();
+</script>
+</body>
+</html>
