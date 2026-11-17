@@ -28,7 +28,10 @@ debajo de la tabla, en lugar de a un lado.
 
 ## El despliegue de cada destajo
 
-Cada concepto se abre con la misma forma que la matriz de OPUS:
+Al abrir un trabajo, lo primero es la frase: por cada m² se pagan tanto,
+pagarle a la gente cuesta tanto, quedan tanto. Verde si deja, ocre si está
+apretado, rojo si pierde. Debajo viene el desglose con la misma forma que la
+matriz de OPUS, para quien lo quiera revisar:
 
 - **Análisis del precio unitario**: los insumos arriba (mano de obra,
   herramienta, materiales, equipos) y abajo el renglón de la cuadrilla con su
@@ -88,19 +91,22 @@ cuadrillas, rendimientos y lo medido son de la maqueta.
 
 ## La pantalla del residente (`movil.html`)
 
-La maqueta del teléfono, aparte, para abrirla en el celular. Se llega a ella
-desde el enlace de la pantalla web o directo en `movil.html`.
+La maqueta del teléfono, aparte, para abrirla en el celular. Está escrita para
+quien captura en la obra, no para quien hizo la matriz: sin "rendimiento de
+cálculo" ni índices ni porcentajes.
 
-- **La semana**: los destajos con su clave, su cuadrilla, lo que lleva contra
-  lo presupuestado y la barra de avance.
-- **Un destajo abierto**: precio unitario, cuadrilla, rendimiento de cálculo y
-  lo que lleva.
-- **Captura de avance que calcula mientras tecleas**: cantidad de hoy y
-  jornadas de cuadrilla. En el momento se ve el importe, el rendimiento del
-  día, cuánto se despegó del de cálculo, lo que cuesta la cuadrilla ese día y
-  lo que queda. Si el día salió flojo, lo dice con número, no con corazonada.
-- Mientras está adentro, oficina sigue moviendo precios y el teléfono lo
-  refleja sin recargar.
+- **La semana**: cada trabajo con su nombre en palabras ("Levantar muro de
+  tabique"), lo que lleva, lo que falta y lo que va ganado.
+- **Un trabajo abierto**: cuánto le pagan por unidad, quiénes trabajan ("2
+  albañiles, 2 ayudantes, y el cabo a ratos") y cuánto cuesta ese día de
+  gente.
+- **Dos preguntas, nada más**: cuánto hicieron hoy (con botones de +1, +5,
+  +10, +25 para no teclear) y cuánta gente trabajó (media cuadrilla, la
+  cuadrilla, y media, dos).
+- **El veredicto, en una frase**: *El día salió* en verde, o *El día no
+  salió* en rojo, con los tres números que lo sostienen — lo que vale lo
+  hecho, lo que cuesta la gente y la diferencia — y dos barras comparando el
+  ritmo de hoy contra lo normal.
 
 ## Qué se puede tocar
 

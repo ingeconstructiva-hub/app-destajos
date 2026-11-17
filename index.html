@@ -172,6 +172,7 @@
     background: var(--panel-2); white-space: nowrap;
   }
   th.num, td.num { text-align: right; }
+  th small { display: block; font-size: 9px; font-weight: 400; letter-spacing: .02em; text-transform: none; opacity: .75; margin-top: 1px; }
   table.principal > tbody > tr > td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr.fresca > td { background: var(--accent-soft); }
   td.concepto { font-weight: 600; min-width: 250px; }
@@ -218,6 +219,12 @@
 
   /* --- analisis del precio unitario, al modo de OPUS --- */
   .opus { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 16px 14px 18px; }
+  .enclaro { grid-column: 1 / -1; border: 1px solid var(--live); background: var(--live-soft); border-radius: 12px; padding: 13px 15px; }
+  .enclaro.apretado { border-color: var(--accent); background: var(--accent-soft); }
+  .enclaro.mal { border-color: var(--malo); background: var(--malo-soft); }
+  .enclaro .dicho { margin: 0; font-size: 16px; line-height: 1.5; }
+  .enclaro .dicho b { font-family: var(--font-num); font-weight: 500; }
+  .enclaro .dicho2 { margin: 8px 0 0; font-size: 13.5px; color: var(--fg-soft); }
   @media (min-width: 1100px) { .opus { grid-template-columns: minmax(0,1.75fr) minmax(0,1fr); gap: 26px; } }
   .insumos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
   .ins { border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; background: var(--panel); min-width: 106px; }
@@ -295,36 +302,36 @@
 
 <div class="wrap">
   <nav class="vistas">
-    <button type="button" data-vista="semana" class="activa">Semana en curso</button>
-    <button type="button" data-vista="catalogo">Catálogo<span class="cuenta" id="cuentaPropuestas">0</span></button>
+    <button type="button" data-vista="semana" class="activa">Esta semana</button>
+    <button type="button" data-vista="catalogo">Precios<span class="cuenta" id="cuentaPropuestas">0</span></button>
     <button type="button" data-vista="obras">Obras</button>
-    <button type="button" data-vista="mercado">Mercado</button>
+    <button type="button" data-vista="mercado">Cuánto se paga afuera</button>
   </nav>
 
   <div class="mesa" id="vistaSemana">
 
     <section>
       <div class="titulo">
-        <h1>Catálogo de destajos</h1>
+        <h1>Trabajos de la semana</h1>
         <span class="lbl" style="padding-bottom:5px">Semana 16 – 20 NOV 2026</span>
       </div>
-      <p class="sub">Oficina administra aquí los conceptos de la semana. Cada uno se despliega: quién lo trabaja, cuánto rinde la cuadrilla al día y cuánto cuesta la mano de obra con los jornales del municipio donde está la obra. Lo que se cambia, el residente lo ve en su teléfono al momento.</p>
+      <p class="sub">Cada renglón es un trabajo que se está pagando a destajo. Ábrelo y te dice quién lo hace, cuánto sale al día y si el precio alcanza para pagarle a la gente con los jornales del municipio. Lo que cambies aquí, el residente lo ve en su teléfono al momento.</p>
 
       <div class="tiras">
         <div class="tira">
-          <div class="lbl">Importe de la semana</div>
+          <div class="lbl">Vale el trabajo de la semana</div>
           <div class="cifra" id="totalSemana">$0</div>
         </div>
         <div class="tira">
-          <div class="lbl">Mano de obra estimada</div>
+          <div class="lbl">Cuesta pagarle a la gente</div>
           <div class="cifra" id="totalMO">$0</div>
         </div>
         <div class="tira">
-          <div class="lbl">Margen de la semana</div>
+          <div class="lbl">Queda para la empresa</div>
           <div class="cifra" id="margenSemana">0%</div>
         </div>
         <div class="tira">
-          <div class="lbl">Avances reportados hoy</div>
+          <div class="lbl">Avances que mandó la obra hoy</div>
           <div class="cifra" id="avanceHoy">0</div>
         </div>
       </div>
@@ -339,13 +346,13 @@
           <table class="principal">
             <thead>
               <tr>
-                <th>Concepto</th>
-                <th>Un.</th>
-                <th class="num">Cantidad</th>
-                <th class="num">P.U.</th>
-                <th class="num">Importe</th>
-                <th class="num">M.O. / un.</th>
-                <th class="num">Margen</th>
+                <th>Trabajo<small>y quién lo hace</small></th>
+                <th>Se mide<small>en</small></th>
+                <th class="num">Cuánto<small>de la semana</small></th>
+                <th class="num">Se paga<small>por cada uno</small></th>
+                <th class="num">Vale<small>todo junto</small></th>
+                <th class="num">Cuesta la gente<small>por cada uno</small></th>
+                <th class="num">Deja<small>después de pagar</small></th>
               </tr>
             </thead>
             <tbody id="cuerpo"></tbody>
@@ -355,7 +362,7 @@
 
       <div class="nota" style="margin-top:20px">
         <h3>De dónde sale cada número</h3>
-        <p>El precio unitario es el del catálogo. El rendimiento es lo que la cuadrilla saca en una jornada buena, y el índice de variabilidad le descuenta lo que no sale: clima, retrabajos, acarreo largo, esperar material. La mano de obra por unidad es la jornada de la cuadrilla entre ese rendimiento ya castigado, con los jornales del municipio seleccionado. El margen es lo que queda del precio unitario después de pagarla.</p>
+        <p>El precio es el del catálogo, el que se le paga a la cuadrilla. Luego se ve qué tanto sale en un día: primero lo que saldría en un día parejo, y a eso se le descuenta lo que la obra se come — lluvia, retrabajos, acarreo largo, esperar material. Un día de cuadrilla cuesta lo que suman sus jornales en ese municipio; entre lo que sale en ese día, da lo que cuesta cada metro. Lo que queda del precio después de pagar eso es lo que deja el trabajo.</p>
       </div>
     </section>
 
@@ -397,8 +404,8 @@
 </div>
 
   <section id="vistaCatalogo" hidden>
-    <div class="titulo"><h1>Catálogo de conceptos</h1></div>
-    <p class="sub">Los conceptos que ya están establecidos y su precio vigente. Lo que la obra mide semana con semana propone cambios aquí; se aplican solos o los revisa alguien, según cómo esté puesto el interruptor.</p>
+    <div class="titulo"><h1>Precios de los trabajos</h1></div>
+    <p class="sub">A cómo se está pagando cada trabajo hoy. Lo que la obra mide semana con semana propone cambios aquí: se aplican solos o los revisa alguien, según cómo esté puesto el interruptor de abajo.</p>
 
     <div class="interruptor">
       <label style="flex-direction:row; align-items:center; gap:8px; font-size:13.5px; color:var(--fg)">
@@ -412,14 +419,14 @@
     <p class="sub" style="margin-bottom:12px">Nadie las escribe: cada noche se revisa lo capturado en todas las obras y lo que se sale de lo esperado se levanta aquí, con la cuenta de jornadas que lo respalda. Cada tarjeta dice de qué consulta salió.</p>
     <div class="tarjetas" id="propuestas"></div>
 
-    <h2 class="lbl" style="margin:26px 0 10px">Conceptos establecidos</h2>
+    <h2 class="lbl" style="margin:26px 0 10px">Precios que están corriendo</h2>
     <div class="tabla-caja">
       <div class="scroller">
         <table class="principal">
           <thead><tr>
-            <th>Clave</th><th>Concepto</th><th>Un.</th>
-            <th class="num">P.U. vigente</th><th class="num">Rend. base</th>
-            <th>Vigente desde</th><th>Origen</th>
+            <th>Clave</th><th>Trabajo</th><th>Se mide en</th>
+            <th class="num">Se paga</th><th class="num">Sale al día</th>
+            <th>Desde cuándo</th><th>De dónde salió</th>
           </tr></thead>
           <tbody id="cuerpoCatalogo"></tbody>
         </table>
@@ -600,6 +607,10 @@
       return n + ' ' + (n > 1 ? PUESTOS[p].plural : PUESTOS[p].corto);
     }).join(' + ');
   }
+  /* M2 se lee "eme dos" y nadie lo dice asi. Aqui sale como se escribe. */
+  var UNIDAD_CORTA = { M2: "m²", M3: "m³", M: "metro", ML: "metro", PZA: "pieza", KG: "kilo", TON: "tonelada" };
+  function corto(u) { return UNIDAD_CORTA[u] || String(u).toLowerCase(); }
+
   var importe = function (c) { return Number(c.cantidad) * Number(c.pu); };
   var manoDeObra = function (c) { return Number(c.cantidad) * costoUnitario(c); };
 
@@ -634,6 +645,8 @@
     $('cuerpo').innerHTML = conceptos.map(function (c) {
       var m = margen(c);
       var pillClase = m < 0.08 ? 'pill malo' : 'pill';
+      // El numero solo no dice si esta bien. La palabra sí.
+      var comoVa = m < 0 ? 'pierde' : (m < 0.08 ? 'apretado' : 'bien');
       var abierta = !!abiertas[c.id];
 
       var fila =
@@ -652,15 +665,31 @@
           '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="pu" data-id="' + c.id + '" value="' + c.pu + '"></td>' +
           '<td class="importe num" data-importe="' + c.id + '">' + pesos(importe(c)) + '</td>' +
           '<td class="importe num" data-mo="' + c.id + '">' + pesos(costoUnitario(c), 2) + '</td>' +
-          '<td class="num"><span class="' + pillClase + '" data-margen="' + c.id + '">' + (m * 100).toFixed(0) + '%</span></td>' +
+          '<td class="num"><span class="' + pillClase + '" data-margen="' + c.id + '">' + comoVa + ' · ' + (m * 100).toFixed(0) + '%</span></td>' +
         '</tr>';
 
       return abierta ? fila + filaDetalle(c) : fila;
     }).join('');
   }
 
+  /* La cuadrilla como se dice en la obra: los que van completos se cuentan y
+   * el que anda entrando y saliendo se dice asi, no con un 0.1 que nadie
+   * lee. La clave de la matriz se queda, pero al final y chiquita. */
+  function enPalabras(c) {
+    var completos = [], ratos = [];
+    ['maestro', 'albanil', 'ayudante', 'cabo'].forEach(function (p) {
+      var n = c.cuadrilla[p];
+      if (!n) return;
+      if (n >= 1) completos.push(Math.round(n) + ' ' + (n > 1 ? PUESTOS[p].plural : PUESTOS[p].corto));
+      else ratos.push('el ' + PUESTOS[p].corto);
+    });
+    var txt = completos.join(', ');
+    if (ratos.length) txt += (txt ? ', y ' : '') + ratos.join(' y ') + ' a ratos';
+    return txt;
+  }
+
   function resumenCuadrilla(c) {
-    return c.cuadrillaClave + ' · ' + describeCuadrilla(c);
+    return enPalabras(c) + ' · ' + c.cuadrillaClave;
   }
 
   function filaDetalle(c) {
@@ -670,25 +699,43 @@
     var vMedida = variabilidadMedida(c);
     var yaAjustado = vMedida !== null && Math.abs(vMedida - c.variabilidad) < 0.005;
 
-    return '<tr class="detalle"><td colspan="7"><div class="opus">' +
+    var queda = c.pu - costoUnitario(c);
+    var resumen =
+      '<div class="enclaro' + (m < 0 ? ' mal' : (m < 0.08 ? ' apretado' : '')) + '">' +
+        '<p class="dicho">' +
+          'Por cada <b>' + escapar(corto(c.unidad)) + '</b> se pagan <b>' + pesos(c.pu, 2) + '</b>, ' +
+          'y pagarle a la gente cuesta <b>' + pesos(costoUnitario(c), 2) + '</b>. ' +
+          (queda >= 0
+            ? 'Quedan <b>' + pesos(queda, 2) + '</b> de cada uno.'
+            : 'Faltan <b>' + pesos(-queda, 2) + '</b> para cubrirlo: a este precio se pierde.') +
+        '</p>' +
+        '<p class="dicho2">' +
+          'La cuadrilla (' + escapar(enPalabras(c)) + ') cuesta ' + pesos(jornada(c)) + ' el día y saca ' +
+          numero(rendEfectivo(c), 1) + ' ' + escapar(corto(c.unidad)) + ' en ese día. ' +
+          'En la semana son ' + c.cantidad + ' ' + escapar(corto(c.unidad)) + ': ' +
+          (queda >= 0 ? 'dejan ' : 'se pierden ') + pesos(Math.abs(c.cantidad * queda)) + '.' +
+        '</p>' +
+      '</div>';
+
+    return '<tr class="detalle"><td colspan="7"><div class="opus">' + resumen +
 
       '<div class="bloque">' +
-        '<h4>' + escapar(c.clave) + ' · Análisis del precio unitario</h4>' +
+        '<h4>Cómo se arma ese precio · ' + escapar(c.clave) + '</h4>' +
         '<div class="insumos">' +
-          '<div class="ins activo"><span class="k">Mano de obra</span><span class="v">' + pesos(mo, 2) + '</span></div>' +
+          '<div class="ins activo"><span class="k">La gente</span><span class="v">' + pesos(mo, 2) + '</span></div>' +
           '<div class="ins"><span class="k">Herramienta</span><span class="v">' + pesos(herr, 2) + '</span></div>' +
-          '<div class="ins apagado"><span class="k">Materiales</span><span class="v">0.00</span></div>' +
-          '<div class="ins apagado"><span class="k">Equipos</span><span class="v">0.00</span></div>' +
-          '<div class="ins"><span class="k">Todos</span><span class="v">' + pesos(costoUnitario(c), 2) + '</span></div>' +
+          '<div class="ins apagado"><span class="k">Material</span><span class="v">lo pone ROCAL</span></div>' +
+          '<div class="ins apagado"><span class="k">Maquinaria</span><span class="v">aparte</span></div>' +
+          '<div class="ins"><span class="k">Todo junto</span><span class="v">' + pesos(costoUnitario(c), 2) + '</span></div>' +
         '</div>' +
         '<table class="opusT"><thead><tr>' +
-          '<th>Clave</th><th>Descripción</th><th>Unidad</th>' +
-          '<th class="n">Cantidad</th><th class="n">Rendimiento</th>' +
-          '<th class="n">Costo unitario</th><th class="n">Total</th>' +
+          '<th>Clave</th><th>Quién o qué</th><th>Se paga por</th>' +
+          '<th class="n">Cuánto</th><th class="n">Rinde</th>' +
+          '<th class="n">Cuesta al día</th><th class="n">Toca por ' + escapar(corto(c.unidad)) + '</th>' +
         '</tr></thead><tbody>' +
           '<tr class="cuadrilla-renglon">' +
             '<td class="clave">' + escapar(c.cuadrillaClave) + '</td>' +
-            '<td>Cuadrilla (' + escapar(describeCuadrilla(c)) + ')</td>' +
+            '<td>La cuadrilla: ' + escapar(enPalabras(c)) + '</td>' +
             '<td>jor</td>' +
             '<td class="n">' + numero(jornadasPorUnidad(c), 6) + '</td>' +
             '<td class="n">' + numero(rendEfectivo(c), 6) + '</td>' +
@@ -696,44 +743,45 @@
             '<td class="n">' + pesos(mo, 2) + '</td>' +
           '</tr>' +
           pintaCuadrilla(c) +
-          '<tr><td class="clave">HERR-001</td><td>Herramienta menor</td><td>%</td>' +
+          '<tr><td class="clave">HERR-001</td><td>Herramienta (cuchara, hilo, plomo)</td><td>%</td>' +
             '<td class="n">' + numero(3, 6) + '</td><td class="n">—</td>' +
             '<td class="n">' + pesos(mo, 2) + '</td><td class="n">' + pesos(herr, 2) + '</td></tr>' +
-          '<tr class="suma"><td></td><td>Costo directo por ' + escapar(c.unidad) + '</td>' +
+          '<tr class="suma"><td></td><td>Cuesta por cada ' + escapar(corto(c.unidad)) + '</td>' +
             '<td></td><td class="n"></td><td class="n"></td><td class="n"></td>' +
             '<td class="n">' + pesos(costoUnitario(c), 2) + '</td></tr>' +
         '</tbody></table>' +
-        '<p class="pie">La cantidad de la cuadrilla es el recíproco del rendimiento: ' +
-          numero(jornadasPorUnidad(c), 6) + ' jornadas por ' + escapar(c.unidad) + '. ' +
-          'Los jornales son los de ' + escapar(municipio.nombre) + '.</p>' +
+        '<p class="pie">Se lee así: la cuadrilla saca ' + numero(rendEfectivo(c), 2) + ' ' + escapar(corto(c.unidad)) +
+          ' en un día, entonces cada ' + escapar(corto(c.unidad)) + ' se lleva ' + numero(jornadasPorUnidad(c), 6) +
+          ' de ese día. Es el mismo renglón que trae la matriz de OPUS. Los jornales son los de ' +
+          escapar(municipio.nombre) + '.</p>' +
       '</div>' +
 
       '<div class="columna-derecha">' +
         '<div class="bloque">' +
-          '<h4>Rendimiento</h4>' +
-          '<div class="renglon"><span>De la matriz</span><span class="v">' + numero(c.rend, 2) + ' ' + escapar(c.unidad) + '/jor</span></div>' +
-          '<div class="renglon"><span>Índice de variabilidad</span><span class="v">− ' + (c.variabilidad * 100).toFixed(0) + '%</span></div>' +
-          '<div class="renglon fuerte"><span>Rendimiento de cálculo</span><span class="v">' + numero(rendEfectivo(c), 2) + ' ' + escapar(c.unidad) + '/jor</span></div>' +
+          '<h4>Cuánto sale al día</h4>' +
+          '<div class="renglon"><span>En un día parejo</span><span class="v">' + numero(c.rend, 2) + ' ' + escapar(corto(c.unidad)) + '</span></div>' +
+          '<div class="renglon"><span>Se le descuenta<br><small style="color:var(--fg-soft)">lluvia, retrabajos, acarreo, esperar material</small></span><span class="v">− ' + (c.variabilidad * 100).toFixed(0) + '%</span></div>' +
+          '<div class="renglon fuerte"><span>Con lo que se pierde, salen</span><span class="v">' + numero(rendEfectivo(c), 2) + ' ' + escapar(corto(c.unidad)) + '</span></div>' +
           '<div class="medido" style="margin-top:10px">' +
-            '<div class="enc"><h4>Medido en obra</h4><span class="lbl">últimas 4 semanas</span></div>' +
-            '<div class="renglon"><span>Rendimiento real</span><span class="v">' + numero(c.medido.rend, 2) + ' ' + escapar(c.unidad) + '/jor</span></div>' +
-            '<div class="renglon"><span>Jornadas reportadas</span><span class="v">' + c.medido.jornadas + '</span></div>' +
-            '<div class="renglon"><span>Variabilidad que sale sola</span><span class="v">− ' + (vMedida * 100).toFixed(0) + '%</span></div>' +
+            '<div class="enc"><h4>Lo que de verdad ha salido</h4><span class="lbl">últimas 4 semanas</span></div>' +
+            '<div class="renglon"><span>Sale al día</span><span class="v">' + numero(c.medido.rend, 2) + ' ' + escapar(corto(c.unidad)) + '</span></div>' +
+            '<div class="renglon"><span>Días de cuadrilla ya reportados</span><span class="v">' + c.medido.jornadas + '</span></div>' +
+            '<div class="renglon"><span>Según eso, se pierde</span><span class="v">− ' + (vMedida * 100).toFixed(0) + '%</span></div>' +
             (yaAjustado
-              ? '<p class="pie">El índice ya es el medido. Se recalcula solo con cada avance que reporta la obra.</p>'
-              : '<button class="ajustar" type="button" data-ajustar="' + c.id + '">Usar el medido (− ' + (vMedida * 100).toFixed(0) + '%)</button>') +
+              ? '<p class="pie">Ya está puesto lo que de verdad sale. Se vuelve a calcular solo con cada avance que manda la obra.</p>'
+              : '<button class="ajustar" type="button" data-ajustar="' + c.id + '">Usar lo que de verdad sale (− ' + (vMedida * 100).toFixed(0) + '%)</button>') +
           '</div>' +
         '</div>' +
 
         '<div class="bloque">' +
-          '<h4>Lo que deja el destajo</h4>' +
-          '<div class="renglon"><span>Costo directo por ' + escapar(c.unidad) + '</span><span class="v">' + pesos(costoUnitario(c), 2) + '</span></div>' +
-          '<div class="renglon"><span>Precio unitario</span><span class="v">' + pesos(c.pu, 2) + '</span></div>' +
-          '<div class="renglon fuerte"><span>Queda por ' + escapar(c.unidad) + '</span><span class="v">' + pesos(c.pu - costoUnitario(c), 2) + '</span></div>' +
+          '<h4>Las cuentas, por cada ' + escapar(corto(c.unidad)) + '</h4>' +
+          '<div class="renglon"><span>Cuesta la gente y su herramienta</span><span class="v">' + pesos(costoUnitario(c), 2) + '</span></div>' +
+          '<div class="renglon"><span>Se paga</span><span class="v">' + pesos(c.pu, 2) + '</span></div>' +
+          '<div class="renglon fuerte"><span>Queda</span><span class="v">' + pesos(c.pu - costoUnitario(c), 2) + '</span></div>' +
           '<div class="renglon"><span>Margen</span><span class="v"><span class="' + (m < 0.08 ? 'pill malo' : 'pill') + '">' + (m * 100).toFixed(1) + '%</span></span></div>' +
           '<p class="pie">' + (m < 0.08
-            ? 'Apretado: con los jornales de ' + escapar(municipio.nombre) + ' este precio casi no cubre la cuadrilla.'
-            : 'Sobre ' + pesos(c.cantidad * (c.pu - costoUnitario(c))) + ' en los ' + c.cantidad + ' ' + escapar(c.unidad) + ' de la semana.') +
+            ? 'Con los jornales de ' + escapar(municipio.nombre) + ' este precio casi no alcanza. Vale la pena revisarlo antes de contratar más.'
+            : 'En los ' + c.cantidad + ' ' + escapar(corto(c.unidad)) + ' de la semana son ' + pesos(c.cantidad * (c.pu - costoUnitario(c))) + '.') +
           '</p>' +
         '</div>' +
       '</div>' +
@@ -794,7 +842,8 @@
     if (mo) mo.textContent = pesos(costoUnitario(c), 2);
     var pm = document.querySelector('[data-margen="' + id + '"]');
     if (pm) {
-      pm.textContent = (margen(c) * 100).toFixed(0) + '%';
+      var mm = margen(c);
+      pm.textContent = (mm < 0 ? 'pierde' : (mm < 0.08 ? 'apretado' : 'bien')) + ' · ' + (mm * 100).toFixed(0) + '%';
       pm.className = margen(c) < 0.08 ? 'pill malo' : 'pill';
     }
     pintarResumen();
