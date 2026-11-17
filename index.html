@@ -137,11 +137,22 @@
   .fuente .porque { font-size: 12px; color: var(--fg-soft); }
   .pill.gris { background: var(--panel-2); color: var(--fg-soft); }
 
-  .obra-tarjeta { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 14px; }
+  /* Las obras caben de tres en tres en pantalla ancha y nunca se estiran a
+     lo largo de todo el monitor: un renglon de 40 cm no se lee. */
+  .obras-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 680px) { .obras-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .obras-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .obra-tarjeta {
+    border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
+    padding: 15px 16px; width: 100%; text-align: left; font: inherit; color: var(--fg);
+    cursor: pointer; display: grid; gap: 4px; align-content: start;
+  }
+  .obra-tarjeta:hover { border-color: var(--accent); }
+  .obra-tarjeta .entrar { margin-top: 10px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
   .obra-tarjeta.fresca { border-color: var(--accent); background: var(--accent-soft); }
   .obra-tarjeta h3 { font-family: var(--font-head); font-size: 15px; margin: 0; }
   .obra-tarjeta .donde { font-size: 12px; color: var(--fg-soft); }
-  .obra-tarjeta .renglon { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .obra-tarjeta .renglon { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 6px 0; border-bottom: 1px solid var(--line); }
   .obra-tarjeta .renglon:last-of-type { border-bottom: none; }
   .obra-tarjeta .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 
@@ -269,6 +280,19 @@
   table.opusT tr.miembro td:nth-child(2) { padding-left: 18px; }
   table.opusT tr.suma td { border-top: 1px solid var(--line-fuerte); border-bottom: none; font-weight: 600; }
   .columna-derecha { display: grid; gap: 16px; align-content: start; }
+
+  /* --- una obra por dentro --- */
+  .vuelta { background: none; border: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--accent); cursor: pointer; padding: 0 0 8px; }
+  .dia { margin-top: 20px; }
+  .dia-enc { display: flex; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--line-fuerte); padding-bottom: 6px; }
+  .dia-enc h3 { font-family: var(--font-head); font-size: 14px; margin: 0; flex: 1; min-width: 0; }
+  .dia-enc .suma { font-family: var(--font-num); font-size: 14px; }
+  .mov { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+  .mov.fresca { background: var(--accent-soft); border-radius: 8px; padding-left: 8px; padding-right: 8px; }
+  .mov .que { font-weight: 600; font-size: 14.5px; }
+  .mov .quien2 { font-size: 12.5px; color: var(--fg-soft); }
+  .mov .cuanto { font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .mov .importe2 { font-family: var(--font-num); font-size: 12.5px; color: var(--fg-soft); text-align: right; white-space: nowrap; }
   .medido { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); }
   .medido .enc { display: flex; align-items: baseline; gap: 8px; }
   .medido .enc h4 { margin: 0; flex: 1; }
@@ -514,8 +538,25 @@
       <div class="tira"><div class="lbl">Destajo de la semana</div><div class="cifra" id="oImporte">$0</div></div>
     </div>
 
-    <div class="tarjetas" id="obras"></div>
+    <div class="obras-grid" id="obras"></div>
     <p class="pie" style="margin-top:14px; font-size:12.5px; color:var(--fg-soft)">En la maqueta las obras están puestas a mano. De verdad saldrían del padrón de obras, con su residente y su municipio; aquí nada más se le colgaría el destajo de cada una.</p>
+  </section>
+
+  <section id="vistaObra" hidden>
+    <button class="vuelta" type="button" id="btnVolverObras">‹ Todas las obras</button>
+    <div class="titulo"><h1 id="obNombre">Obra</h1></div>
+    <p class="sub" id="obQuien">—</p>
+
+    <div class="tiras">
+      <div class="tira"><div class="lbl">Destajo de la semana</div><div class="cifra" id="obImporte">$0</div></div>
+      <div class="tira"><div class="lbl">De lo programado</div><div class="cifra" id="obAvance">0%</div></div>
+      <div class="tira"><div class="lbl">Trabajos abiertos</div><div class="cifra" id="obConceptos">0</div></div>
+      <div class="tira"><div class="lbl">Última captura</div><div class="cifra" id="obUltima">—</div></div>
+    </div>
+
+    <h2 class="lbl" style="margin:24px 0 2px">Lo que ha capturado la obra</h2>
+    <p class="sub">Cada renglón es un avance que mandó el residente desde el teléfono, con la hora y quién lo mandó. Es el historial del destajo: de aquí sale la raya de la semana.</p>
+    <div id="obHistorial"></div>
   </section>
 
   <section id="vistaMercado" hidden>
@@ -1361,6 +1402,56 @@
     { id: 5, nombre: 'Drenaje colonia Loma Bonita', municipio: 'Zacatelco', residente: 'R. Sánchez', programado: 61900, capturado: 39740, hace: 7, conceptos: 6 }
   ];
   var obrasFrescas = {};
+  var obraAbierta = null;
+
+  /* El historial de cada obra. En la maqueta se arma al cargar, a partir de
+   * lo que lleva capturado cada una, para que las sumas cuadren con lo que
+   * dice la tarjeta en lugar de ser numeros sueltos. */
+  var TRABAJOS_OBRA = [
+    { nombre: 'MURO DE TABIQUE', unidad: 'M2', pu: 120 },
+    { nombre: 'FIRME DE 8 CM', unidad: 'M2', pu: 110 },
+    { nombre: 'APLANADO FINO A ALT. MAXIMA DE 3M', unidad: 'M2', pu: 20 },
+    { nombre: 'CIMBRADO', unidad: 'M2', pu: 150 },
+    { nombre: 'EXCAVACION DE CEPAS', unidad: 'M3', pu: 120 },
+    { nombre: 'ARMADO DE CASTILLO 15 X 15', unidad: 'M', pu: 60 },
+    { nombre: 'VACIADO DE CONCRETO CON VIBRADO', unidad: 'M3', pu: 250 }
+  ];
+  var DIAS = ['Hoy', 'Ayer', 'Miércoles 18', 'Martes 17', 'Lunes 16'];
+
+  function armarHistorial(o) {
+    var movs = [];
+    var faltante = o.capturado;
+    var cuantos = 11;
+    for (var i = 0; i < cuantos; i++) {
+      var t = TRABAJOS_OBRA[(o.id + i) % TRABAJOS_OBRA.length];
+      var parte = i === cuantos - 1 ? faltante : Math.round(faltante / (cuantos - i) * (0.75 + ((i * 7 + o.id * 13) % 50) / 100));
+      parte = Math.max(0, Math.min(parte, faltante));
+      faltante -= parte;
+      var cantidad = Math.max(1, Math.round(parte / t.pu * 10) / 10);
+      movs.push({
+        dia: DIAS[Math.min(DIAS.length - 1, Math.floor(i / 3))],
+        hora: (7 + ((i * 5 + o.id) % 10)) + ':' + String(((i * 17) % 6) * 10).padStart(2, '0'),
+        trabajo: t.nombre, unidad: t.unidad, cantidad: cantidad,
+        importe: Math.round(cantidad * t.pu), quien: o.residente
+      });
+    }
+    /* El redondeo de las cantidades deja centavos sueltos, y un historial
+     * que no suma lo que dice la tarjeta es justo lo que nadie perdona en
+     * una pantalla de dinero. La diferencia se carga al primer renglon. */
+    var suma = movs.reduce(function (x, m) { return x + m.importe; }, 0);
+    var sobra = o.capturado - suma;
+    if (movs.length && sobra !== 0) {
+      var t0 = TRABAJOS_OBRA[o.id % TRABAJOS_OBRA.length];
+      movs[0].importe += sobra;
+      movs[0].cantidad = Math.round(movs[0].importe / t0.pu * 10) / 10;
+      movs[0].trabajo = t0.nombre;
+      movs[0].unidad = t0.unidad;
+      movs[0].importe = Math.round(movs[0].importe);
+    }
+
+    return movs;
+  }
+  obras.forEach(function (o) { o.historial = armarHistorial(o); });
 
   function haceTexto(min) {
     if (min < 60) return 'hace ' + min + ' min';
@@ -1372,19 +1463,21 @@
     $('obras').innerHTML = obras.map(function (o) {
       var avance = o.programado > 0 ? Math.min(1, o.capturado / o.programado) : 0;
       var alDia = o.hace <= 120;
-      return '<div class="obra-tarjeta' + (obrasFrescas[o.id] ? ' fresca' : '') + '">' +
+      return '<button class="obra-tarjeta' + (obrasFrescas[o.id] ? ' fresca' : '') + '" type="button" data-obra="' + o.id + '">' +
         '<div style="display:flex; align-items:baseline; gap:8px">' +
           '<h3>' + escapar(o.nombre) + '</h3>' +
           '<span class="' + (alDia ? 'pill' : 'pill malo') + '" style="margin-left:auto">' +
             (alDia ? 'al día' : 'sin capturar') + '</span>' +
         '</div>' +
         '<div class="donde">' + escapar(o.municipio) + ' · ' + escapar(o.residente) + '</div>' +
-        '<div class="barra" style="height:5px; border-radius:999px; background:var(--line); overflow:hidden; margin:10px 0">' +
+        '<div class="barra" style="height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin:12px 0 4px">' +
           '<i style="display:block; height:100%; width:' + (avance * 100).toFixed(0) + '%; background:var(--accent)"></i></div>' +
-        '<div class="renglon"><span>Destajo de la semana</span><span class="v">' + pesos(o.capturado) + ' / ' + pesos(o.programado) + '</span></div>' +
-        '<div class="renglon"><span>Conceptos abiertos</span><span class="v">' + o.conceptos + '</span></div>' +
-        '<div class="renglon"><span>Última captura</span><span class="v">' + haceTexto(o.hace) + '</span></div>' +
-      '</div>';
+        '<div class="renglon"><span>Lleva esta semana</span><span class="v">' + pesos(o.capturado) + '</span></div>' +
+        '<div class="renglon"><span>De lo programado</span><span class="v">' + (avance * 100).toFixed(0) + '% de ' + pesos(o.programado) + '</span></div>' +
+        '<div class="renglon"><span>Trabajos abiertos</span><span class="v">' + o.conceptos + '</span></div>' +
+        '<div class="renglon" style="border-bottom:none"><span>Última captura</span><span class="v">' + haceTexto(o.hace) + '</span></div>' +
+        '<div class="entrar">Ver sus destajos →</div>' +
+      '</button>';
     }).join('');
 
     $('oActivas').textContent = obras.length;
@@ -1514,7 +1607,7 @@
       e: '186 m² × $120 = $22,320' },
     cuesta: { t: 'Cuesta la gente', p: 'Lo que a ROCAL le cuesta de verdad cada metro: lo que suman los jornales de la cuadrilla en un día, entre lo que esa cuadrilla saca en ese día, más la herramienta. Cambia según el municipio, porque ahí cambian los jornales.',
       e: '$2,275 el día ÷ 22.1 m² = $106.13 por m²' },
-    deja: { t: 'Deja', p: 'Lo que sobra del precio después de pagarle a la gente. Sale en verde cuando deja bien, en ocre cuando está apretado (menos de 8%) y en rojo cuando el precio ya no alcanza y se pierde.',
+    deja: { t: 'Deja', p: 'Lo que sobra del precio después de pagarle a la gente. Sale en verde cuando deja bien, en naranja cuando queda apretado (menos de 8%) y en rojo cuando el precio ya no alcanza y se pierde.',
       e: '$120 − $106.13 = $13.87 de cada m², o sea 12%' },
     valesemana: { t: 'Vale el trabajo de la semana', p: 'La suma de todos los trabajos de la semana a como están contratados. Es lo que se le va a pagar a las cuadrillas si todo se hace completo.', e: '' },
     cuestasemana: { t: 'Cuesta pagarle a la gente', p: 'Lo que cuestan los jornales de todas las cuadrillas para sacar ese trabajo, con los jornales del municipio que está seleccionado arriba.', e: '' },
@@ -1562,6 +1655,67 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarGlobo(); });
   window.addEventListener('scroll', cerrarGlobo, true);
 
+  // --- una obra por dentro -------------------------------------------------
+
+  function pintarObra() {
+    var o = obraAbierta;
+    if (!o) return;
+    var avance = o.programado > 0 ? Math.min(1, o.capturado / o.programado) : 0;
+
+    $('obNombre').textContent = o.nombre;
+    $('obQuien').textContent = o.municipio + ' · lo lleva ' + o.residente + ' · semana del 16 al 20 de noviembre';
+    $('obImporte').textContent = pesos(o.capturado);
+    $('obAvance').textContent = (avance * 100).toFixed(0) + '%';
+    $('obConceptos').textContent = o.conceptos;
+    $('obUltima').textContent = haceTexto(o.hace);
+
+    var porDia = [];
+    var mapa = {};
+    o.historial.forEach(function (m) {
+      if (!mapa[m.dia]) { mapa[m.dia] = []; porDia.push(m.dia); }
+      mapa[m.dia].push(m);
+    });
+
+    $('obHistorial').innerHTML = porDia.map(function (d) {
+      var movs = mapa[d];
+      var suma = movs.reduce(function (a, m) { return a + m.importe; }, 0);
+      return '<div class="dia">' +
+        '<div class="dia-enc"><h3>' + escapar(d) + '</h3>' +
+          '<span class="lbl">' + movs.length + (movs.length === 1 ? ' captura' : ' capturas') + '</span>' +
+          '<span class="suma">' + pesos(suma) + '</span></div>' +
+        movs.map(function (m) {
+          return '<div class="mov' + (m.fresca ? ' fresca' : '') + '">' +
+            '<span class="que">' + escapar(m.trabajo) + '</span>' +
+            '<span class="cuanto">' + numero(m.cantidad, 1) + ' ' + escapar(cortoTabla(m.unidad)) + '</span>' +
+            '<span class="quien2">' + escapar(m.hora) + ' · lo mandó ' + escapar(m.quien) + '</span>' +
+            '<span class="importe2">' + pesos(m.importe) + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }).join('');
+  }
+
+  function abrirObra(id) {
+    obraAbierta = null;
+    for (var i = 0; i < obras.length; i++) if (obras[i].id === id) obraAbierta = obras[i];
+    if (!obraAbierta) return;
+    $('vistaObras').hidden = true;
+    $('vistaObra').hidden = false;
+    pintarObra();
+    window.scrollTo(0, 0);
+  }
+
+  $('obras').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-obra]') : null;
+    if (b) abrirObra(Number(b.dataset.obra));
+  });
+  $('btnVolverObras').addEventListener('click', function () {
+    obraAbierta = null;
+    $('vistaObra').hidden = true;
+    $('vistaObras').hidden = false;
+    pintarObras();
+  });
+
   // --- cambio de vista -----------------------------------------------------
 
   document.querySelector('.vistas').addEventListener('click', function (e) {
@@ -1573,7 +1727,8 @@
     });
     $('vistaSemana').hidden = cual !== 'semana';
     $('vistaCatalogo').hidden = cual !== 'catalogo';
-    $('vistaObras').hidden = cual !== 'obras';
+    $('vistaObras').hidden = cual !== 'obras' || !!obraAbierta;
+    $('vistaObra').hidden = cual !== 'obras' || !obraAbierta;
     $('vistaMercado').hidden = cual !== 'mercado';
     if (cual === 'catalogo') pintarCatalogo();
     if (cual === 'obras') pintarObras();
@@ -1606,8 +1761,27 @@
     o.capturado += monto;
     o.hace = 0;
     obrasFrescas[o.id] = true;
-    setTimeout(function () { delete obrasFrescas[o.id]; pintarObras(); }, 6000);
-    if (!$('vistaObras').hidden) {
+
+    // La captura también entra al historial de esa obra, arriba del todo.
+    var t = TRABAJOS_OBRA[(o.id + o.historial.length) % TRABAJOS_OBRA.length];
+    var mov = {
+      dia: 'Hoy', hora: new Date().getHours() + ':' + String(new Date().getMinutes()).padStart(2, '0'),
+      trabajo: t.nombre, unidad: t.unidad,
+      cantidad: Math.round(monto / t.pu * 10) / 10, importe: monto, quien: o.residente, fresca: true
+    };
+    o.historial.unshift(mov);
+    setTimeout(function () {
+      delete obrasFrescas[o.id];
+      mov.fresca = false;
+      pintarObras();
+      if (obraAbierta) pintarObra();
+    }, 6000);
+
+    if (obraAbierta && obraAbierta.id === o.id) {
+      pintarObra();
+      latir($('obImporte'));
+      avisar('<b>' + escapar(o.residente) + '</b> acaba de capturar ' + pesos(monto) + ' aquí.');
+    } else if (!$('vistaObras').hidden) {
       pintarObras();
       latir($('oImporte'));
       avisar('<b>' + escapar(o.residente) + '</b> capturó ' + pesos(monto) + ' en ' + escapar(o.nombre) + '.');

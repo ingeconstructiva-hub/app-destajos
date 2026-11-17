@@ -29,7 +29,7 @@ debajo de la tabla, en lugar de a un lado.
 ## El despliegue de cada destajo
 
 Al abrir un trabajo, lo primero es la frase: por cada m² se pagan tanto,
-pagarle a la gente cuesta tanto, quedan tanto. Verde si deja, ocre si está
+pagarle a la gente cuesta tanto, quedan tanto. Verde si deja, naranja si está
 apretado, rojo si pierde. Debajo viene el desglose con la misma forma que la
 matriz de OPUS, para quien lo quiera revisar:
 
@@ -114,7 +114,7 @@ cálculo" ni índices ni porcentajes.
   total de la semana y el teléfono se mueven en el mismo momento.
 - **+ Concepto** da de alta uno nuevo; aparece también en el teléfono.
 - **El residente reporta avance** es el camino de regreso: sube la cantidad
-  desde la obra y el renglón se marca en ocre con quién lo movió. Pasa solo
+  desde la obra y el renglón se marca en naranja con quién lo movió. Pasa solo
   cada 12 segundos, para que no se vea una pantalla quieta.
 
 ## Si se decide armarla de verdad
