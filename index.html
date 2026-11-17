@@ -300,6 +300,50 @@
   .nota p { margin: 0; font-size: 13.5px; color: var(--fg-soft); }
   .controles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
+  /* El alta de un trabajo. Se llena de arriba abajo y abajo del todo dice
+     si el precio alcanza, antes de agregarlo a la semana. */
+  dialog#dlgNuevo {
+    border: 1px solid var(--line); border-radius: 18px; padding: 0;
+    background: var(--panel); color: var(--fg); width: min(560px, calc(100vw - 24px));
+    max-height: calc(100vh - 48px);
+  }
+  dialog#dlgNuevo::backdrop { background: rgba(0,0,0,.5); }
+  .modal-enc { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+  .modal-enc h3 { font-family: var(--font-head); font-size: 19px; margin: 0; }
+  .modal-enc p { margin: 3px 0 0; font-size: 13px; color: var(--fg-soft); }
+  .modal-cuerpo { padding: 16px 18px; display: grid; gap: 16px; }
+  .campo { display: grid; gap: 6px; }
+  .campo > label { font-size: 13.5px; font-weight: 600; }
+  .campo .pista { font-size: 12.5px; color: var(--fg-soft); }
+  .campo select, .campo input[type="text"], .campo input[type="number"] {
+    font: inherit; font-size: 15px; color: var(--fg); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; width: 100%;
+  }
+  .campo input[type="number"] { font-family: var(--font-num); text-align: right; }
+  .dosCampos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .conSufijo { display: flex; align-items: center; gap: 8px; }
+  .conSufijo .uni { font-size: 13.5px; color: var(--fg-soft); white-space: nowrap; }
+
+  .gente { display: grid; gap: 8px; }
+  .quien { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--panel-2); }
+  .quien .nom { flex: 1; min-width: 0; font-size: 14.5px; }
+  .quien .nom small { display: block; font-size: 11.5px; color: var(--fg-soft); }
+  .quien .cuantos { font-family: var(--font-num); font-size: 16px; min-width: 26px; text-align: center; }
+  .quien button {
+    width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--fg); font: inherit; font-size: 18px; cursor: pointer;
+  }
+  .quien button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .previa { border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); padding: 13px 14px; }
+  .previa.bien { border-color: var(--live); background: var(--live-soft); }
+  .previa.apretado { border-color: var(--accent); background: var(--accent-soft); }
+  .previa.mal { border-color: var(--malo); background: var(--malo-soft); }
+  .previa .dictamen { font-family: var(--font-head); font-size: 16px; margin: 0 0 6px; }
+  .previa .cuentita { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 3px 0; }
+  .previa .cuentita .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .modal-pie { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+
   .toast {
     position: fixed; left: 50%; transform: translateX(-50%);
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
@@ -494,6 +538,74 @@
     <div class="tarjetas" id="fuentesMuertas"></div>
     <p class="pie" style="margin-top:14px; font-size:12.5px; color:var(--fg-soft)">La lectura corre una vez al mes: el jornal se mueve por año, no por día. Nada de lo que entra por aquí se aplica solo, ni con el interruptor del catálogo encendido, y un movimiento mayor al 5% en un mes se detiene aunque venga respaldado.</p>
   </section>
+
+<dialog id="dlgNuevo">
+  <form method="dialog" id="formNuevo">
+    <div class="modal-enc">
+      <h3>Agregar un trabajo a la semana</h3>
+      <p>Semana del 16 al 20 de noviembre · Torre Catalina</p>
+    </div>
+
+    <div class="modal-cuerpo">
+      <div class="campo">
+        <label for="nTrabajo">¿Qué trabajo es?</label>
+        <select id="nTrabajo"></select>
+        <span class="pista" id="nPista">Sale del catálogo, con su precio y lo que suele rendir.</span>
+      </div>
+
+      <div class="campo" id="campoOtro" hidden>
+        <label for="nOtro">Escribe el trabajo</label>
+        <input type="text" id="nOtro" placeholder="Desemboquillado de columna">
+        <span class="pista">Se da de alta solo en esta obra, y queda pendiente de que oficina lo meta al catálogo.</span>
+      </div>
+
+      <div class="dosCampos">
+        <div class="campo">
+          <label for="nCantidad">¿Cuánto se va a hacer?</label>
+          <div class="conSufijo">
+            <input type="number" id="nCantidad" min="0" step="1" value="100">
+            <span class="uni" id="nUnidad">m²</span>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="nPrecio">¿A cómo se le paga?</label>
+          <div class="conSufijo">
+            <input type="number" id="nPrecio" min="0" step="0.5" value="0">
+            <span class="uni" id="nUnidad2">por m²</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>¿Quién lo va a hacer?</label>
+        <span class="pista">La cuadrilla que se le va a poner. Con esto se saca cuánto cuesta el día.</span>
+        <div class="gente" id="nGente"></div>
+      </div>
+
+      <div class="campo">
+        <label for="nRinde">¿Cuánto sacan en un día?</label>
+        <div class="conSufijo">
+          <input type="number" id="nRinde" min="0" step="0.5" value="20">
+          <span class="uni" id="nUnidad3">m² al día</span>
+        </div>
+        <span class="pista" id="nPistaRinde">Es lo que esa cuadrilla saca en un día parejo. Se le descuenta un 10% por lluvia, retrabajos y acarreos.</span>
+      </div>
+
+      <div class="previa" id="nPrevia">
+        <p class="dictamen" id="nDictamen">Llena los datos</p>
+        <div class="cuentita"><span>Se le paga a la cuadrilla</span><span class="v" id="nPaga">$0</span></div>
+        <div class="cuentita"><span>Cuesta la gente</span><span class="v" id="nCuesta">$0</span></div>
+        <div class="cuentita"><span>Queda de cada uno</span><span class="v" id="nQueda">$0</span></div>
+        <div class="cuentita"><span>En toda la semana queda</span><span class="v" id="nQuedaTotal">$0</span></div>
+      </div>
+    </div>
+
+    <div class="modal-pie">
+      <button class="secundario" type="button" id="nCancelar">Cancelar</button>
+      <button class="primario" type="submit" id="nAgregar">Agregar a la semana</button>
+    </div>
+  </form>
+</dialog>
 
 <div id="globo" hidden></div>
 
@@ -938,21 +1050,146 @@
       (t > 0 ? (((t - mo) / t) * 100).toFixed(1) : '0') + '%.');
   });
 
-  $('btnNuevo').addEventListener('click', function () {
-    var base = nuevos[cursorNuevos % nuevos.length];
-    cursorNuevos++;
-    var c = {
-      id: proximoId++, nombre: base.nombre, unidad: base.unidad, pu: base.pu,
-      cantidad: base.cantidad, clave: base.clave, cuadrillaClave: base.cuadrillaClave,
-      cuadrilla: base.cuadrilla, rend: base.rend, variabilidad: base.variabilidad,
-      medido: base.medido, porQuien: ''
+  /* El alta de un trabajo. Lo que importa aqui es que las cuentas se vean
+   * MIENTRAS se llena: si el precio no alcanza para la cuadrilla que se le
+   * esta poniendo, se ve antes de agregarlo, no a fin de semana. */
+  var nuevaGente = { maestro: 0, albanil: 2, ayudante: 2, cabo: 0.1 };
+  var PASOS = { maestro: 0.5, albanil: 1, ayudante: 1, cabo: 0.1 };
+
+  function pintarGenteNueva() {
+    $('nGente').innerHTML = ORDEN.map(function (k) {
+      var n = nuevaGente[k] || 0;
+      var dice = n === 0 ? 'no va' : (n < 1 ? 'a ratos' : (n > 1 ? PUESTOS[k].plural : PUESTOS[k].corto));
+      return '<div class="quien">' +
+        '<span class="nom">' + PUESTOS[k].nombre + '<small>' + pesos(salario(k)) + ' el día · ' + dice + '</small></span>' +
+        '<button type="button" data-menos="' + k + '" aria-label="Quitar">−</button>' +
+        '<span class="cuantos">' + (n % 1 === 0 ? n : n.toFixed(1)) + '</span>' +
+        '<button type="button" data-mas2="' + k + '" aria-label="Poner">+</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function cuadrillaNueva() {
+    var g = {};
+    for (var k in nuevaGente) if (nuevaGente[k] > 0) g[k] = nuevaGente[k];
+    return g;
+  }
+
+  function calcularPrevia() {
+    var sel = $('nTrabajo').value;
+    var cantidad = Number($('nCantidad').value || 0);
+    var precio = Number($('nPrecio').value || 0);
+    var rinde = Number($('nRinde').value || 0);
+
+    var falso = {
+      cantidad: cantidad, pu: precio, cuadrilla: cuadrillaNueva(),
+      rend: rinde, variabilidad: 0.10,
+      unidad: $('nUnidad').textContent
     };
+    var costo = rinde > 0 ? costoUnitario(falso) : 0;
+    var queda = precio - costo;
+    var m = precio > 0 ? queda / precio : 0;
+
+    $('nPaga').textContent = pesos(precio, 2);
+    $('nCuesta').textContent = pesos(costo, 2);
+    $('nQueda').textContent = (queda >= 0 ? '' : '− ') + pesos(Math.abs(queda), 2);
+    $('nQuedaTotal').textContent = (queda >= 0 ? '' : '− ') + pesos(Math.abs(queda * cantidad));
+
+    var caja = $('nPrevia');
+    caja.classList.remove('bien', 'apretado', 'mal');
+    if (!(precio > 0 && rinde > 0 && cantidad > 0)) {
+      $('nDictamen').textContent = 'Llena los datos';
+    } else if (m < 0) {
+      caja.classList.add('mal');
+      $('nDictamen').textContent = '✕ A ese precio se pierde';
+    } else if (m < 0.08) {
+      caja.classList.add('apretado');
+      $('nDictamen').textContent = '• Queda apretado (' + (m * 100).toFixed(0) + '%)';
+    } else {
+      caja.classList.add('bien');
+      $('nDictamen').textContent = '✓ El precio alcanza (' + (m * 100).toFixed(0) + '%)';
+    }
+    $('nAgregar').disabled = !(precio > 0 && rinde > 0 && cantidad > 0);
+  }
+
+  function ponerUnidades(u) {
+    $('nUnidad').textContent = cortoTabla(u);
+    $('nUnidad2').textContent = 'por ' + cortoTabla(u);
+    $('nUnidad3').textContent = cortoTabla(u) + ' al día';
+  }
+
+  $('btnNuevo').addEventListener('click', function () {
+    $('nTrabajo').innerHTML = catalogo.map(function (k, i) {
+      return '<option value="' + i + '">' + escapar(k.nombre) + ' · ' + pesos(k.pu, 2) + ' por ' + escapar(cortoTabla(k.unidad)) + '</option>';
+    }).join('') + '<option value="otro">Otro, no está en el catálogo…</option>';
+    $('nTrabajo').value = '0';
+    $('campoOtro').hidden = true;
+    nuevaGente = { maestro: 0, albanil: 2, ayudante: 2, cabo: 0.1 };
+    pintarGenteNueva();
+    elegirDelCatalogo();
+    $('dlgNuevo').showModal();
+  });
+
+  function elegirDelCatalogo() {
+    var v = $('nTrabajo').value;
+    if (v === 'otro') {
+      $('campoOtro').hidden = false;
+      $('nPista').textContent = 'No está en el catálogo: pon tú el precio y lo que rinde.';
+      calcularPrevia();
+      return;
+    }
+    $('campoOtro').hidden = true;
+    var k = catalogo[Number(v)];
+    $('nPista').textContent = 'Del catálogo: ' + pesos(k.pu, 2) + ' por ' + cortoTabla(k.unidad) + ', suele rendir ' + numero(k.rend, 1) + ' al día. Puedes cambiarlo.';
+    $('nPrecio').value = k.pu;
+    $('nRinde').value = k.rend;
+    ponerUnidades(k.unidad);
+    calcularPrevia();
+  }
+
+  $('nTrabajo').addEventListener('change', elegirDelCatalogo);
+  ['nCantidad', 'nPrecio', 'nRinde'].forEach(function (id) {
+    $(id).addEventListener('input', calcularPrevia);
+  });
+  $('nGente').addEventListener('click', function (e) {
+    var mas = e.target.closest ? e.target.closest('[data-mas2]') : null;
+    var menos = e.target.closest ? e.target.closest('[data-menos]') : null;
+    if (mas) nuevaGente[mas.dataset.mas2] = Math.min(9, (nuevaGente[mas.dataset.mas2] || 0) + PASOS[mas.dataset.mas2]);
+    else if (menos) nuevaGente[menos.dataset.menos] = Math.max(0, (nuevaGente[menos.dataset.menos] || 0) - PASOS[menos.dataset.menos]);
+    else return;
+    pintarGenteNueva();
+    calcularPrevia();
+  });
+  $('nCancelar').addEventListener('click', function () { $('dlgNuevo').close(); });
+
+  $('formNuevo').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = $('nTrabajo').value;
+    var delCatalogo = v !== 'otro' ? catalogo[Number(v)] : null;
+    var nombre = delCatalogo ? delCatalogo.nombre : ($('nOtro').value.trim().toUpperCase() || 'TRABAJO SIN NOMBRE');
+    var unidad = delCatalogo ? delCatalogo.unidad : 'M2';
+
+    var c = {
+      id: proximoId++, clave: delCatalogo ? delCatalogo.clave : 'nuevo',
+      nombre: nombre, unidad: unidad,
+      pu: Number($('nPrecio').value || 0),
+      cantidad: Number($('nCantidad').value || 0),
+      cuadrillaClave: 'MOCU-' + String(proximoId).padStart(3, '0'),
+      cuadrilla: cuadrillaNueva(),
+      rend: Number($('nRinde').value || 0),
+      variabilidad: 0.10,
+      medido: { rend: Number($('nRinde').value || 0) * 0.9, jornadas: 0 },
+      porQuien: ''
+    };
+
     conceptos.push(c);
     marcar(c.id);
     pintarTodo();
     latir($('totalSemana')); latir($('pTotal'));
     desdeCambio = 0;
-    avisar('Alta de <b>' + escapar(c.nombre) + '</b> · ' + pesos(importe(c)) + '. Apareció en el teléfono sin avisarle a nadie.');
+    $('dlgNuevo').close();
+    avisar('Se agregó <b>' + escapar(c.nombre) + '</b> · ' + c.cantidad + ' ' + escapar(cortoTabla(c.unidad)) +
+      ' a ' + pesos(c.pu, 2) + '. Ya le apareció a J. Ortega en el teléfono.');
   });
 
   /* El camino de regreso: el residente reporta avance desde el telefono y
