@@ -172,6 +172,29 @@
     background: var(--panel-2); white-space: nowrap;
   }
   th.num, td.num { text-align: right; }
+  button.info {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 17px; height: 17px; margin-left: 5px; padding: 0;
+    border: 1px solid var(--line-fuerte); border-radius: 50%;
+    background: transparent; color: var(--fg-soft);
+    font-family: var(--font-head); font-size: 10px; font-weight: 700;
+    line-height: 1; cursor: pointer; vertical-align: -3px;
+  }
+  button.info:hover, button.info.abierta { border-color: var(--accent); color: var(--accent); }
+
+  /* El globo va fijo y se coloca con JS, para que no lo corte el scroll
+     horizontal de la tabla ni lo tape el renglon de abajo. */
+  #globo {
+    position: fixed; z-index: 30; width: min(290px, calc(100vw - 32px));
+    background: var(--panel); color: var(--fg);
+    border: 1px solid var(--accent); border-radius: 12px;
+    padding: 12px 14px; box-shadow: 0 14px 30px -12px rgba(0,0,0,.5);
+    font-size: 13.5px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400;
+  }
+  #globo h5 { font-family: var(--font-head); font-size: 13px; margin: 0 0 5px; color: var(--accent); }
+  #globo p { margin: 0; }
+  #globo .ejemplo { margin-top: 8px; font-family: var(--font-num); font-size: 12px; color: var(--fg-soft); }
+
   th small { display: block; font-size: 9px; font-weight: 400; letter-spacing: .02em; text-transform: none; opacity: .75; margin-top: 1px; }
   table.principal > tbody > tr > td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr.fresca > td { background: var(--accent-soft); }
@@ -322,15 +345,15 @@
 
       <div class="tiras">
         <div class="tira">
-          <div class="lbl">Vale el trabajo de la semana</div>
+          <div class="lbl">Vale la semana<button class="info" type="button" data-ayuda="valesemana" aria-label="Qué es esto">i</button></div>
           <div class="cifra" id="totalSemana">$0</div>
         </div>
         <div class="tira">
-          <div class="lbl">Cuesta pagarle a la gente</div>
+          <div class="lbl">Cuesta la gente<button class="info" type="button" data-ayuda="cuestasemana" aria-label="Qué es esto">i</button></div>
           <div class="cifra" id="totalMO">$0</div>
         </div>
         <div class="tira">
-          <div class="lbl">Queda para la empresa</div>
+          <div class="lbl">Queda<button class="info" type="button" data-ayuda="quedasemana" aria-label="Qué es esto">i</button></div>
           <div class="cifra" id="margenSemana">0%</div>
         </div>
         <div class="tira">
@@ -349,12 +372,12 @@
           <table class="principal">
             <thead>
               <tr>
-                <th>Trabajo<small>y quién lo hace</small></th>
-                <th class="num">Cantidad<small>que se hace esta semana</small></th>
-                <th class="num">Precio a la cuadrilla<small>por cada metro o pieza</small></th>
-                <th class="num">Total del trabajo<small>cantidad × precio</small></th>
-                <th class="num">Cuesta la gente<small>por cada metro o pieza</small></th>
-                <th class="num">Deja<small>ya pagada la gente</small></th>
+                <th>Trabajo<button class="info" type="button" data-ayuda="trabajo" aria-label="Qué es esta columna">i</button></th>
+                <th class="num">Cantidad<button class="info" type="button" data-ayuda="cantidad" aria-label="Qué es esta columna">i</button></th>
+                <th class="num">Precio<button class="info" type="button" data-ayuda="precio" aria-label="Qué es esta columna">i</button></th>
+                <th class="num">Total<button class="info" type="button" data-ayuda="total" aria-label="Qué es esta columna">i</button></th>
+                <th class="num">Cuesta la gente<button class="info" type="button" data-ayuda="cuesta" aria-label="Qué es esta columna">i</button></th>
+                <th class="num">Deja<button class="info" type="button" data-ayuda="deja" aria-label="Qué es esta columna">i</button></th>
               </tr>
             </thead>
             <tbody id="cuerpo"></tbody>
@@ -471,6 +494,8 @@
     <div class="tarjetas" id="fuentesMuertas"></div>
     <p class="pie" style="margin-top:14px; font-size:12.5px; color:var(--fg-soft)">La lectura corre una vez al mes: el jornal se mueve por año, no por día. Nada de lo que entra por aquí se aplica solo, ni con el interruptor del catálogo encendido, y un movimiento mayor al 5% en un mes se detiene aunque venga respaldado.</p>
   </section>
+
+<div id="globo" hidden></div>
 
 <div class="toast" id="toast" hidden></div>
 
@@ -1236,6 +1261,69 @@
       '. La mano de obra de la semana queda en ' + pesos(mo) + ' y el margen en ' +
       (t > 0 ? (((t - mo) / t) * 100).toFixed(1) : '0') + '%.');
   });
+
+  // --- la ayuda de cada columna -------------------------------------------
+
+  /* Cada explicacion trae un ejemplo con numeros de la propia pantalla: una
+   * definicion sola se lee y no se entiende; con el ejemplo, si. */
+  var AYUDA = {
+    trabajo: { t: 'Trabajo', p: 'El trabajo que se le contrató a destajo a una cuadrilla, y debajo quién lo está haciendo. La clave al final (MOCU-002) es la misma que trae la matriz en OPUS, por si hay que buscarlo allá.',
+      e: 'MURO DE TABIQUE · 2 albañiles, 2 ayudantes, y el cabo a ratos' },
+    cantidad: { t: 'Cantidad', p: 'Lo que se va a hacer de ese trabajo en la semana, en su medida: metros cuadrados, metros cúbicos, metros o piezas. Se puede corregir aquí mismo: escribe encima del número y todo lo demás se recalcula solo.',
+      e: '186 m² de muro esta semana' },
+    precio: { t: 'Precio a la cuadrilla', p: 'Lo que se le paga a la cuadrilla por cada metro o pieza terminada. Es nada más la mano de obra: el material lo pone ROCAL. Sale del catálogo y también se puede corregir aquí.',
+      e: '$120 por cada m² levantado' },
+    total: { t: 'Total del trabajo', p: 'La cantidad por el precio. Es lo que se le va a pagar a la cuadrilla por todo ese trabajo si lo terminan completo en la semana.',
+      e: '186 m² × $120 = $22,320' },
+    cuesta: { t: 'Cuesta la gente', p: 'Lo que a ROCAL le cuesta de verdad cada metro: lo que suman los jornales de la cuadrilla en un día, entre lo que esa cuadrilla saca en ese día, más la herramienta. Cambia según el municipio, porque ahí cambian los jornales.',
+      e: '$2,275 el día ÷ 22.1 m² = $106.13 por m²' },
+    deja: { t: 'Deja', p: 'Lo que sobra del precio después de pagarle a la gente. Sale en verde cuando deja bien, en ocre cuando está apretado (menos de 8%) y en rojo cuando el precio ya no alcanza y se pierde.',
+      e: '$120 − $106.13 = $13.87 de cada m², o sea 12%' },
+    valesemana: { t: 'Vale el trabajo de la semana', p: 'La suma de todos los trabajos de la semana a como están contratados. Es lo que se le va a pagar a las cuadrillas si todo se hace completo.', e: '' },
+    cuestasemana: { t: 'Cuesta pagarle a la gente', p: 'Lo que cuestan los jornales de todas las cuadrillas para sacar ese trabajo, con los jornales del municipio que está seleccionado arriba.', e: '' },
+    quedasemana: { t: 'Queda para la empresa', p: 'La diferencia entre las dos cifras de la izquierda, en porcentaje. Es lo que le queda a la obra después de pagar la mano de obra de la semana.', e: '' }
+  };
+
+  var globo = $('globo');
+  var iconoAbierto = null;
+
+  function cerrarGlobo() {
+    globo.hidden = true;
+    if (iconoAbierto) iconoAbierto.classList.remove('abierta');
+    iconoAbierto = null;
+  }
+
+  function abrirGlobo(boton) {
+    var a = AYUDA[boton.dataset.ayuda];
+    if (!a) return;
+    globo.innerHTML = '<h5>' + escapar(a.t) + '</h5><p>' + escapar(a.p) + '</p>' +
+      (a.e ? '<p class="ejemplo">' + escapar(a.e) + '</p>' : '');
+    globo.hidden = false;
+    if (iconoAbierto) iconoAbierto.classList.remove('abierta');
+    iconoAbierto = boton;
+    boton.classList.add('abierta');
+
+    // Se coloca debajo del icono, y si no cabe, encima; nunca fuera de la pantalla.
+    var r = boton.getBoundingClientRect();
+    var g = globo.getBoundingClientRect();
+    var x = Math.min(Math.max(12, r.left + r.width / 2 - g.width / 2), window.innerWidth - g.width - 12);
+    var y = r.bottom + 8;
+    if (y + g.height > window.innerHeight - 12) y = Math.max(12, r.top - g.height - 8);
+    globo.style.left = x + 'px';
+    globo.style.top = y + 'px';
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button.info') : null;
+    if (b) {
+      if (iconoAbierto === b) cerrarGlobo(); else abrirGlobo(b);
+      e.stopPropagation();
+      return;
+    }
+    if (!globo.hidden && !(e.target.closest && e.target.closest('#globo'))) cerrarGlobo();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarGlobo(); });
+  window.addEventListener('scroll', cerrarGlobo, true);
 
   // --- cambio de vista -----------------------------------------------------
 
