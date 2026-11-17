@@ -165,7 +165,7 @@
   .tabla-top h2 { font-family: var(--font-head); font-size: 15px; margin: 0; }
   .tabla-top .de-donde { font-size: 12px; color: var(--fg-soft); flex: 1; min-width: 0; }
   .scroller { overflow-x: auto; }
-  table.principal { border-collapse: collapse; width: 100%; min-width: 820px; }
+  table.principal { border-collapse: collapse; width: 100%; min-width: 860px; }
   th {
     font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-soft);
     text-align: left; font-weight: 600; padding: 9px 12px; border-bottom: 1px solid var(--line);
@@ -187,9 +187,12 @@
   button.abrir .flecha { color: var(--accent); font-size: 11px; width: 11px; display: inline-block; }
   button.abrir:hover .texto { text-decoration: underline; }
 
+  .sufijo { font-size: 11px; color: var(--fg-soft); margin-left: 4px; white-space: nowrap; }
+  table.principal > tbody > tr > td.num { white-space: nowrap; }
+  td.importe .sufijo { font-family: var(--font-body); }
   input.celda {
     font: inherit; font-family: var(--font-num); font-size: 14px; text-align: right;
-    width: 88px; color: var(--fg); background: transparent;
+    width: 74px; color: var(--fg); background: transparent;
     border: 1px solid transparent; border-radius: 7px; padding: 5px 7px;
   }
   input.celda:hover { border-color: var(--line-fuerte); }
@@ -347,12 +350,11 @@
             <thead>
               <tr>
                 <th>Trabajo<small>y quién lo hace</small></th>
-                <th>Se mide<small>en</small></th>
-                <th class="num">Cuánto<small>de la semana</small></th>
-                <th class="num">Se paga<small>por cada uno</small></th>
-                <th class="num">Vale<small>todo junto</small></th>
-                <th class="num">Cuesta la gente<small>por cada uno</small></th>
-                <th class="num">Deja<small>después de pagar</small></th>
+                <th class="num">Cantidad<small>que se hace esta semana</small></th>
+                <th class="num">Precio a la cuadrilla<small>por cada metro o pieza</small></th>
+                <th class="num">Total del trabajo<small>cantidad × precio</small></th>
+                <th class="num">Cuesta la gente<small>por cada metro o pieza</small></th>
+                <th class="num">Deja<small>ya pagada la gente</small></th>
               </tr>
             </thead>
             <tbody id="cuerpo"></tbody>
@@ -610,6 +612,8 @@
   /* M2 se lee "eme dos" y nadie lo dice asi. Aqui sale como se escribe. */
   var UNIDAD_CORTA = { M2: "m²", M3: "m³", M: "metro", ML: "metro", PZA: "pieza", KG: "kilo", TON: "tonelada" };
   function corto(u) { return UNIDAD_CORTA[u] || String(u).toLowerCase(); }
+  var UNIDAD_TABLA = { M2: "m²", M3: "m³", M: "m", ML: "m", PZA: "pza", KG: "kg", TON: "ton" };
+  function cortoTabla(u) { return UNIDAD_TABLA[u] || String(u).toLowerCase(); }
 
   var importe = function (c) { return Number(c.cantidad) * Number(c.pu); };
   var manoDeObra = function (c) { return Number(c.cantidad) * costoUnitario(c); };
@@ -660,11 +664,10 @@
               (c.porQuien ? ' · <span class="marca-avance">actualizó ' + escapar(c.porQuien) + '</span>' : '') +
             '</span>' +
           '</td>' +
-          '<td>' + escapar(c.unidad) + '</td>' +
-          '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="cantidad" data-id="' + c.id + '" value="' + c.cantidad + '"></td>' +
-          '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="pu" data-id="' + c.id + '" value="' + c.pu + '"></td>' +
+          '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="cantidad" data-id="' + c.id + '" value="' + c.cantidad + '"><span class="sufijo">' + escapar(cortoTabla(c.unidad)) + '</span></td>' +
+          '<td class="num"><input class="celda" type="number" step="0.01" min="0" data-campo="pu" data-id="' + c.id + '" value="' + c.pu + '"><span class="sufijo">/' + escapar(cortoTabla(c.unidad)) + '</span></td>' +
           '<td class="importe num" data-importe="' + c.id + '">' + pesos(importe(c)) + '</td>' +
-          '<td class="importe num" data-mo="' + c.id + '">' + pesos(costoUnitario(c), 2) + '</td>' +
+          '<td class="importe num" data-mo="' + c.id + '">' + pesos(costoUnitario(c), 2) + '<span class="sufijo">/' + escapar(cortoTabla(c.unidad)) + '</span></td>' +
           '<td class="num"><span class="' + pillClase + '" data-margen="' + c.id + '">' + comoVa + ' · ' + (m * 100).toFixed(0) + '%</span></td>' +
         '</tr>';
 
@@ -717,7 +720,7 @@
         '</p>' +
       '</div>';
 
-    return '<tr class="detalle"><td colspan="7"><div class="opus">' + resumen +
+    return '<tr class="detalle"><td colspan="6"><div class="opus">' + resumen +
 
       '<div class="bloque">' +
         '<h4>Cómo se arma ese precio · ' + escapar(c.clave) + '</h4>' +
