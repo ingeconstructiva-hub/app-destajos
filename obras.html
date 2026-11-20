@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Obras · ROCAL Destajos</title>
+<meta name="description" content="Hub de obras: se escoge una y de ahí se entra a sus destajos.">
+<meta name="theme-color" content="#15140f">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* La entrada después del login: las obras. De aquí se escoge una y todo lo
+     que sigue —la semana, los precios, el historial— es de esa obra. */
+  :root {
+    --bg: #f3f2ee; --panel: #ffffff; --panel-2: #faf9f6; --line: #dedbd2; --line-fuerte: #c9c5b8;
+    --fg: #1d1c18; --fg-soft: #67645a; --accent: #b4411c; --accent-soft: #fbe8e0;
+    --live: #1f7a4d; --live-soft: #e2f1e8; --malo: #9c2b2b; --malo-soft: #fae1e1; --chrome: #15140f;
+    --font-head: 'Archivo', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-num: 'IBM Plex Mono', ui-monospace, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141310; --panel: #1e1d19; --panel-2: #262520; --line: #35332c; --line-fuerte: #4a473d;
+      --fg: #f1efe8; --fg-soft: #a8a498; --accent: #e8734a; --accent-soft: #3a1f15;
+      --live: #4fc287; --live-soft: #16301f; --malo: #f08a8a; --malo-soft: #3a1818; --chrome: #0a0a08;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { height: 100%; }
+  body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+
+  .barra { background: var(--chrome); color: #f5f3ec; }
+  .barra .adentro {
+    max-width: 1340px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .marca { font-family: var(--font-head); font-weight: 700; font-size: 17px; }
+  .marca span { color: #ffb495; }
+  .barra .derecha { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #b9b4a6; }
+  button.salir {
+    background: none; border: 1px solid #3b382f; border-radius: 8px;
+    font: inherit; font-size: 12.5px; color: #b9b4a6; padding: 5px 10px; cursor: pointer;
+  }
+  button.salir:hover { border-color: #ffb495; color: #ffb495; }
+
+  .wrap {
+    max-width: 1340px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 26px 64px;
+  }
+  h1 { font-family: var(--font-head); font-size: clamp(24px, 3vw, 30px); font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--fg-soft); font-size: 14.5px; margin: 0 0 20px; max-width: 70ch; }
+
+  .buscar { position: relative; margin-bottom: 18px; max-width: 420px; }
+  .buscar input {
+    font: inherit; font-size: 15px; width: 100%; color: var(--fg); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px;
+  }
+  .buscar input:focus { border-color: var(--accent); outline: none; }
+
+  .rejilla { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 680px) { .rejilla { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (min-width: 1100px) { .rejilla { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+
+  .obra {
+    width: 100%; text-align: left; font: inherit; color: var(--fg); cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px; display: grid; gap: 4px; align-content: start;
+  }
+  .obra:hover { border-color: var(--accent); }
+  .obra:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .obra .arriba { display: flex; align-items: baseline; gap: 8px; }
+  .obra h2 { font-family: var(--font-head); font-size: 17px; margin: 0; flex: 1; min-width: 0; }
+  .obra .donde { font-size: 13px; color: var(--fg-soft); }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--live-soft); color: var(--live);
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.malo { background: var(--malo-soft); color: var(--malo); }
+  .barrita { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 12px 0 6px; }
+  .barrita i { display: block; height: 100%; background: var(--accent); }
+  .renglon { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .renglon:last-of-type { border-bottom: none; }
+  .renglon .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .entrar { margin-top: 10px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+  .vacio { border: 1px dashed var(--line-fuerte); border-radius: 14px; padding: 28px; text-align: center; color: var(--fg-soft); }
+  .pie { font-size: 12.5px; color: var(--fg-soft); margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<div class="barra">
+  <div class="adentro">
+    <div class="marca">ROCAL <span>· Destajos</span></div>
+    <div class="derecha">
+      <span id="quienEntro">Oficina</span>
+      <button class="salir" type="button" id="btnSalir">Salir</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Tus obras</h1>
+  <p class="sub">Escoge en cuál vas a trabajar. De ahí en adelante, la semana, los precios y el historial son de esa obra.</p>
+
+  <div class="buscar">
+    <input type="search" id="buscar" placeholder="Buscar por obra, municipio o residente" autocomplete="off">
+  </div>
+
+  <div class="rejilla" id="rejilla"></div>
+  <p class="pie">En la maqueta las obras están puestas a mano. De verdad saldrían del padrón de obras del sistema de gestión, con su residente y su municipio.</p>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var escapar = function (t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var pesos = function (n) { return '$' + Number(n).toLocaleString('es-MX', { maximumFractionDigits: 0 }); };
+
+  // Sin sesión no se ven obras.
+  var sesion = null;
+  try {
+    sesion = JSON.parse(localStorage.getItem('rocal_sesion') || 'null');
+    if (!sesion) { location.replace('./login.html'); return; }
+  } catch (err) { sesion = null; }
+
+  if (sesion && sesion.nombre) {
+    var nom = String(sesion.nombre).split(/\s+/).map(function (w) {
+      return w.length === 1 ? w.toUpperCase() + '.' : w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(' ');
+    $('quienEntro').textContent = (sesion.papel === 'obra' ? 'Obra · ' : 'Oficina · ') + nom;
+  }
+
+  $('btnSalir').addEventListener('click', function () {
+    try { localStorage.removeItem('rocal_sesion'); localStorage.removeItem('rocal_obra'); } catch (err) {}
+    location.href = './login.html';
+  });
+
+  /* Las mismas obras que usa el tablero. Cuando haya back, esto es un select
+   * a projects + project_members del sistema de gestión. */
+  var obras = [
+    { id: 1, nombre: 'Torre Catalina', municipio: 'Tlaxcala', residente: 'J. Ortega', programado: 79080, capturado: 52430, conceptos: 7, hace: 2 },
+    { id: 2, nombre: 'Nave industrial Xicohténcatl', municipio: 'Apizaco', residente: 'L. Rangel', programado: 112400, capturado: 61850, conceptos: 11, hace: 14 },
+    { id: 3, nombre: 'Ampliación del CECyTE', municipio: 'Huamantla', residente: 'A. Pérez', programado: 48600, capturado: 48600, conceptos: 5, hace: 55 },
+    { id: 4, nombre: 'Fraccionamiento Las Ánimas', municipio: 'Calpulalpan', residente: 'M. Juárez', programado: 96250, capturado: 23100, conceptos: 9, hace: 430 },
+    { id: 5, nombre: 'Drenaje colonia Loma Bonita', municipio: 'Zacatelco', residente: 'R. Sánchez', programado: 61900, capturado: 39740, conceptos: 6, hace: 7 }
+  ];
+
+  function haceTexto(min) {
+    if (min < 60) return 'hace ' + min + ' min';
+    if (min < 1440) return 'hace ' + Math.round(min / 60) + ' h';
+    return 'hace ' + Math.round(min / 1440) + ' d';
+  }
+
+  function pintar(filtro) {
+    var f = (filtro || '').trim().toLowerCase();
+    var lista = obras.filter(function (o) {
+      return !f || (o.nombre + ' ' + o.municipio + ' ' + o.residente).toLowerCase().indexOf(f) >= 0;
+    });
+
+    if (!lista.length) {
+      $('rejilla').innerHTML = '<div class="vacio">Ninguna obra se llama así. Prueba con el municipio o con el residente.</div>';
+      return;
+    }
+
+    $('rejilla').innerHTML = lista.map(function (o) {
+      var avance = o.programado > 0 ? Math.min(1, o.capturado / o.programado) : 0;
+      var alDia = o.hace <= 120;
+      return '<button class="obra" type="button" data-obra="' + o.id + '">' +
+        '<div class="arriba"><h2>' + escapar(o.nombre) + '</h2>' +
+          '<span class="' + (alDia ? 'pill' : 'pill malo') + '">' + (alDia ? 'al día' : 'sin capturar') + '</span></div>' +
+        '<div class="donde">' + escapar(o.municipio) + ' · ' + escapar(o.residente) + '</div>' +
+        '<div class="barrita"><i style="width:' + (avance * 100).toFixed(0) + '%"></i></div>' +
+        '<div class="renglon"><span>Lleva esta semana</span><span class="v">' + pesos(o.capturado) + '</span></div>' +
+        '<div class="renglon"><span>De lo programado</span><span class="v">' + (avance * 100).toFixed(0) + '% de ' + pesos(o.programado) + '</span></div>' +
+        '<div class="renglon"><span>Última captura</span><span class="v">' + haceTexto(o.hace) + '</span></div>' +
+        '<div class="entrar">Entrar a sus destajos →</div>' +
+      '</button>';
+    }).join('');
+  }
+
+  $('rejilla').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-obra]') : null;
+    if (!b) return;
+    var id = Number(b.dataset.obra);
+    var elegida = null;
+    for (var i = 0; i < obras.length; i++) if (obras[i].id === id) elegida = obras[i];
+    if (!elegida) return;
+    try {
+      localStorage.setItem('rocal_obra', JSON.stringify({
+        id: elegida.id, nombre: elegida.nombre, municipio: elegida.municipio, residente: elegida.residente
+      }));
+    } catch (err) { /* sin almacenamiento igual se entra */ }
+    location.href = sesion && sesion.papel === 'obra' ? './movil.html' : './index.html';
+  });
+
+  $('buscar').addEventListener('input', function () { pintar(this.value); });
+
+  pintar('');
+})();
+</script>
+</body>
+</html>

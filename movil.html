@@ -41,7 +41,11 @@
   }
 
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
+  /* El body NO lleva height: 100%. Con eso su caja termina en el borde de
+     la pantalla y el padding de abajo deja de empujar lo que sobresale: el
+     ultimo renglon se mete debajo de la barra fija. */
+  html { height: 100%; }
+  body { margin: 0; min-height: 100%; }
   [hidden] { display: none !important; }
   body {
     background: var(--bg); color: var(--fg);
@@ -143,6 +147,55 @@
   .par.hoy .riel i { background: var(--accent); }
   .par .n { font-family: var(--font-num); font-size: 12.5px; }
 
+  /* Los renglones de la cuadrilla: nombre, menos, cuantos, mas. Los botones
+     van de 44 px porque esto se toca con el dedo, no con el raton. */
+  .gente { display: grid; gap: 8px; }
+  .quien { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--panel); }
+  .quien .nom { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+  .quien .nom small { display: block; font-size: 12px; font-weight: 400; color: var(--fg-soft); }
+  .quien .cuantos { font-family: var(--font-num); font-size: 17px; min-width: 30px; text-align: center; }
+  .quien button { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font: inherit; font-size: 20px; cursor: pointer; }
+  .quien button:active { border-color: var(--accent); color: var(--accent); }
+
+  /* --- apuntar un trabajo nuevo --- */
+  /* En el teléfono la hoja sube desde abajo y ocupa lo que necesita, no una
+     ventanita al centro que deja medio dedo de margen. */
+  dialog#hoja {
+    border: none; padding: 0; margin: 0 0 0 auto; width: 100%; max-width: 560px;
+    max-height: 92vh; position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    background: var(--panel); color: var(--fg);
+    border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px -16px rgba(0,0,0,.6);
+  }
+  dialog#hoja::backdrop { background: rgba(0,0,0,.5); }
+  .hoja-enc { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 10px; }
+  .hoja-enc h2 { font-family: var(--font-head); font-size: 19px; margin: 0; flex: 1; }
+  .hoja-enc button { background: none; border: none; font: inherit; font-size: 15px; color: var(--fg-soft); cursor: pointer; padding: 4px; }
+  .hoja-cuerpo { padding: 16px; display: grid; gap: 18px; overflow-y: auto; max-height: calc(92vh - 150px); }
+  .hoja-pie { padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); }
+  .hoja-pie button {
+    width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    font: inherit; font-weight: 600; font-size: 17px; padding: 15px; cursor: pointer; min-height: 54px;
+  }
+  .hoja-pie button[disabled] { opacity: .4; }
+  .lista-trabajos { display: grid; gap: 8px; max-height: 232px; overflow-y: auto; }
+  .op {
+    width: 100%; text-align: left; background: var(--panel-2); color: var(--fg);
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px; font: inherit; cursor: pointer;
+    min-height: 52px;
+  }
+  .op.elegida { border-color: var(--accent); background: var(--accent-soft); }
+  .op b { display: block; font-size: 15px; }
+  .op small { font-size: 12.5px; color: var(--fg-soft); }
+  .unidades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .unidades button {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    font: inherit; font-size: 14px; font-weight: 600; color: var(--fg); padding: 13px 4px; cursor: pointer; min-height: 50px;
+  }
+  .unidades button.elegida { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nota-hoja { font-size: 13px; color: var(--fg-soft); background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .nota-hoja b { color: var(--fg); }
+  .espera { font-size: 13px; font-weight: 600; color: var(--accent); }
+
   /* --- abajo --- */
   .abajo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--chrome); color: #f5f3ec; padding-bottom: env(safe-area-inset-bottom, 0px); }
   .abajo .fila { display: flex; align-items: center; gap: 12px; padding-block: 12px; }
@@ -236,9 +289,54 @@
       <span class="k" id="kAbajo">Llevan esta semana</span>
       <div class="v" id="vAbajo">$0</div>
     </div>
+    <button class="guardar" id="btnNuevoM" type="button">+ Apuntar trabajo</button>
     <button class="guardar" id="btnGuardar" type="button" hidden disabled>Guardar lo de hoy</button>
   </div>
 </div>
+
+<dialog id="hoja">
+  <form method="dialog" id="formHoja">
+    <div class="hoja-enc">
+      <h2>Apuntar un trabajo</h2>
+      <button type="button" id="hojaCerrar">Cancelar</button>
+    </div>
+
+    <div class="hoja-cuerpo">
+      <div class="campo">
+        <p class="pregunta" style="margin:0 0 8px">¿Cuál vas a apuntar?</p>
+        <div class="lista-trabajos" id="opciones"></div>
+      </div>
+
+      <div id="bloqueOtro" hidden>
+        <p class="pregunta" style="margin:0 0 8px">Escríbelo como se dice en la obra</p>
+        <input type="text" id="hNombre" placeholder="Desemboquillado de columna"
+               style="font:inherit; font-size:16px; width:100%; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--panel); color:var(--fg)">
+        <p class="pregunta" style="margin:16px 0 8px">¿Cómo se mide?</p>
+        <div class="unidades" id="hUnidades"></div>
+      </div>
+
+      <div>
+        <p class="pregunta" style="margin:0 0 4px">¿Cuánto es en total?</p>
+        <p class="ayuda" style="margin:0 0 8px">Lo que hay que hacer de ese trabajo, no lo de hoy.</p>
+        <div class="cantidadon">
+          <input type="number" id="hTotal" inputmode="decimal" step="1" min="0" value="0">
+          <span class="unidad" id="hUni">m²</span>
+        </div>
+      </div>
+
+      <div>
+        <p class="pregunta" style="margin:0 0 8px">¿Quiénes lo van a hacer?</p>
+        <div class="gente" id="hGente"></div>
+      </div>
+
+      <div class="nota-hoja" id="hNota">Del catálogo ya viene el precio, así que esto empieza a contar desde que lo guardes.</div>
+    </div>
+
+    <div class="hoja-pie">
+      <button type="submit" id="hGuardar" disabled>Apuntarlo</button>
+    </div>
+  </form>
+</dialog>
 
 <div class="aviso" id="aviso" hidden></div>
 
@@ -262,10 +360,14 @@
   };
 
   // Lo que se le paga al día a cada quien. Lo pone la oficina, aquí solo se usa.
-  var PAGO = { cabo: 750, maestro: 850, albanil: 650, ayudante: 450 };
-  var UNO = { cabo: 'el cabo', maestro: 'el maestro', albanil: 'albañil', ayudante: 'ayudante' };
-  var VARIOS = { cabo: 'cabos', maestro: 'maestros', albanil: 'albañiles', ayudante: 'ayudantes' };
-  var ORDEN = ['maestro', 'albanil', 'ayudante', 'cabo'];
+  var PAGO = { cabo: 750, maestro: 850, albanil: 650, carpintero: 680, fierrero: 680, operador: 820, ayudante: 450 };
+  var UNO = { cabo: 'el cabo', maestro: 'el maestro', albanil: 'albañil', carpintero: 'carpintero', fierrero: 'fierrero', operador: 'operador', ayudante: 'ayudante' };
+  var VARIOS = { cabo: 'cabos', maestro: 'maestros', albanil: 'albañiles', carpintero: 'carpinteros', fierrero: 'fierreros', operador: 'operadores', ayudante: 'ayudantes' };
+  var ORDEN = ['maestro', 'albanil', 'carpintero', 'fierrero', 'operador', 'ayudante', 'cabo'];
+  var ETIQUETA = {
+    cabo: 'Cabo de oficios', maestro: 'Maestro de obra', albanil: 'Albañil',
+    carpintero: 'Carpintero', fierrero: 'Fierrero', operador: 'Operador', ayudante: 'Ayudante'
+  };
 
   /* Las unidades se dicen con todas sus letras la primera vez: "M2" no le
    * dice nada a quien no hizo la carrera. */
@@ -311,6 +413,13 @@
     return txt;
   }
   function corta(t) { return CORTA[t.unidad] || t.unidad.toLowerCase(); }
+  /* Un "$0" se lee como que no pagan nada; mientras oficina no ponga el
+   * precio, mejor decirlo con todas sus letras. */
+  function precioTexto(t) {
+    return t.esperando
+      ? '<span style="color:var(--accent)">Falta ponerlo</span><small>oficina lo revisa</small>'
+      : pesos(t.pu) + '<small>cada ' + escapar(corta(t)) + ' (' + escapar(larga(t)) + ')</small>';
+  }
   function larga(t) { return UNIDADES[t.unidad] || t.unidad.toLowerCase(); }
 
   var totalSemana = function () {
@@ -325,6 +434,13 @@
     relojAviso = setTimeout(function () { $('aviso').hidden = true; }, 4500);
   }
 
+  /* La obra con la que se entró, elegida en el hub. */
+  var obraM = null;
+  try { obraM = JSON.parse(localStorage.getItem('rocal_obra') || 'null'); } catch (err) { obraM = null; }
+  if (obraM && obraM.nombre) {
+    $('subtitulo').textContent = obraM.nombre + ' · semana del 16 al 20 de noviembre';
+  }
+
   // Quién entró, y la salida. Lo pone la pantalla de login.
   try {
     var sesionM = JSON.parse(localStorage.getItem('rocal_sesion') || 'null');
@@ -332,7 +448,8 @@
       var nom = String(sesionM.nombre).split(/\s+/).map(function (w) {
         return w.length === 1 ? w.toUpperCase() + "." : w.charAt(0).toUpperCase() + w.slice(1);
       }).join(" ");
-      $('subtitulo').textContent = 'Torre Catalina · semana del 16 al 20 de noviembre · ' + nom;
+      $('subtitulo').textContent = (obraM && obraM.nombre ? obraM.nombre : 'Torre Catalina') +
+        ' · semana del 16 al 20 de noviembre · ' + nom;
     }
   } catch (err) { /* sin almacenamiento, se queda el nombre de ejemplo */ }
 
@@ -350,12 +467,14 @@
       return '<button class="destajo" type="button" data-abrir="' + t.id + '">' +
         '<span class="nombre">' + escapar(t.nombre) + '</span>' +
         '<span class="llevas"><span>Llevas <b>' + num(t.hecho) + '</b> de ' + num(t.total) + ' ' + escapar(corta(t)) + '</span>' +
-        '<b>' + pesos(t.hecho * t.pu) + '</b></span>' +
+        '<b>' + (t.esperando ? '—' : pesos(t.hecho * t.pu)) + '</b></span>' +
         '<span class="barra' + (cerrado ? ' lista-llena' : '') + '"><i style="width:' + (avance * 100).toFixed(0) + '%"></i></span>' +
-        (cerrado
-          ? '<span class="listo">✓ Ya quedó completo</span>'
-          : '<span class="llevas"><span>Faltan ' + num(t.total - t.hecho) + ' ' + escapar(corta(t)) + '</span>' +
-            '<span>' + pesos(t.pu) + ' cada ' + escapar(corta(t)) + '</span></span>') +
+        (t.esperando
+          ? '<span class="espera">Esperando que oficina le ponga precio</span>'
+          : cerrado
+            ? '<span class="listo">✓ Ya quedó completo</span>'
+            : '<span class="llevas"><span>Faltan ' + num(t.total - t.hecho) + ' ' + escapar(corta(t)) + '</span>' +
+              '<span>' + pesos(t.pu) + ' cada ' + escapar(corta(t)) + '</span></span>') +
         '</button>';
     }).join('');
     $('vAbajo').textContent = pesos(totalSemana());
@@ -373,12 +492,13 @@
     $('pantallaDetalle').hidden = false;
     $('btnVolver').hidden = false;
     $('btnGuardar').hidden = false;
+    $('btnNuevoM').hidden = true;
     $('tituloPantalla').textContent = 'Lo de hoy';
-    $('subtitulo').textContent = 'Torre Catalina · ' + quienes(t);
+    $('subtitulo').textContent = (obraM && obraM.nombre ? obraM.nombre : 'Torre Catalina') + ' · ' + quienes(t);
     $('kAbajo').textContent = 'Lleva este trabajo';
 
     $('dNombre').textContent = t.nombre;
-    $('dPu').innerHTML = pesos(t.pu) + '<small>cada ' + escapar(corta(t)) + ' (' + escapar(larga(t)) + ')</small>';
+    $('dPu').innerHTML = precioTexto(t);
     $('dCuadrilla').innerHTML = escapar(quienes(t)) + '<small>cuesta ' + pesos(pagoDelDia(t)) + ' el día</small>';
 
     $('uCantidad').textContent = corta(t) + ' (' + larga(t) + ')';
@@ -405,8 +525,9 @@
     $('pantallaDetalle').hidden = true;
     $('btnVolver').hidden = true;
     $('btnGuardar').hidden = true;
+    $('btnNuevoM').hidden = false;
     $('tituloPantalla').textContent = 'Mis destajos';
-    $('subtitulo').textContent = 'Torre Catalina · semana del 16 al 20 de noviembre';
+    $('subtitulo').textContent = (obraM && obraM.nombre ? obraM.nombre : 'Torre Catalina') + ' · semana del 16 al 20 de noviembre';
     $('kAbajo').textContent = 'Llevan esta semana';
     pintarLista();
   }
@@ -430,7 +551,11 @@
     var caja = $('veredicto');
     caja.classList.remove('bien', 'mal');
 
-    if (cant <= 0) {
+    if (t.esperando) {
+      $('vTitulo').textContent = 'Falta el precio';
+      $('vFrase').textContent = 'Oficina todavía no le pone precio a este trabajo. Apunta lo que se haga; las cuentas salen en cuanto lo pongan.';
+      $('vComparativa').hidden = true;
+    } else if (cant <= 0) {
       $('vTitulo').textContent = 'Apunta cuánto hicieron';
       $('vFrase').textContent = 'En cuanto escribas la cantidad te digo si el día salió o no salió.';
       $('vComparativa').hidden = true;
@@ -454,7 +579,7 @@
 
     var nuevo = t.hecho + cant;
     $('dLlevas').innerHTML = num(t.hecho) + ' de ' + num(t.total) + ' ' + escapar(corta(t)) +
-      '<small>' + pesos(t.hecho * t.pu) + ' ganados</small>';
+      '<small>' + (t.esperando ? 'sin precio todavía' : pesos(t.hecho * t.pu) + ' ganados') + '</small>';
     $('dBarra').style.width = (t.total > 0 ? Math.min(1, nuevo / t.total) * 100 : 0).toFixed(0) + '%';
     $('dFalta').textContent = cant > 0
       ? 'Con lo de hoy llegan a ' + num(nuevo, 1) + ' de ' + num(t.total) + ' ' + corta(t) + '.'
@@ -474,6 +599,136 @@
       escapar(t.nombre) + ', ' + pesos(cant * t.pu) + '. La oficina ya lo vio.');
     cerrar();
   }
+
+  // --- apuntar un trabajo nuevo -------------------------------------------
+
+  /* Lo que la obra puede apuntar por su cuenta. Si viene del catálogo trae
+   * precio y empieza a contar luego luego; si el residente lo escribe a
+   * mano, NO se inventa precio aquí: eso lo pone oficina, y mientras tanto
+   * el trabajo se ve en la lista esperando. */
+  var CATALOGO_OBRA = [
+    { nombre: 'Repellado de muro', unidad: 'M2', pu: 95, normal: 28 },
+    { nombre: 'Relleno y compactado', unidad: 'M3', pu: 110, normal: 20 },
+    { nombre: 'Trazo y nivelación', unidad: 'M2', pu: 4.5, normal: 380 },
+    { nombre: 'Colocar block en muro', unidad: 'M2', pu: 135, normal: 24 },
+    { nombre: 'Demoler muro de tabique', unidad: 'M2', pu: 40, normal: 32 }
+  ];
+  var UNIDADES_ELEGIBLES = [
+    { u: 'M2', t: 'm²' }, { u: 'M3', t: 'm³' }, { u: 'M', t: 'metros' }, { u: 'PZA', t: 'piezas' }
+  ];
+
+  var elegido = null;        // índice del catálogo, o 'otro'
+  var unidadNueva = 'M2';
+  var genteNueva = { maestro: 0, albanil: 1, ayudante: 1, cabo: 0.1 };
+  var PASO = { maestro: 0.5, albanil: 1, ayudante: 1, cabo: 0.1 };
+
+  function pintarOpciones() {
+    $('opciones').innerHTML = CATALOGO_OBRA.map(function (k, i) {
+      return '<button class="op' + (elegido === i ? ' elegida' : '') + '" type="button" data-op="' + i + '">' +
+        '<b>' + escapar(k.nombre) + '</b>' +
+        '<small>' + pesos(k.pu, 2) + ' por ' + escapar(CORTA[k.unidad] || k.unidad) + '</small>' +
+      '</button>';
+    }).join('') +
+    '<button class="op' + (elegido === 'otro' ? ' elegida' : '') + '" type="button" data-op="otro">' +
+      '<b>Otro, no está en la lista</b><small>lo escribes tú y oficina le pone precio</small></button>';
+  }
+
+  function pintarGenteNueva() {
+    $('hGente').innerHTML = ORDEN.map(function (k) {
+      var n = genteNueva[k] || 0;
+      var dice = n === 0 ? 'no va' : (n < 1 ? 'a ratos' : (n > 1 ? VARIOS[k] : UNO[k].replace('el ', '')));
+      return '<div class="quien">' +
+        '<span class="nom">' + ETIQUETA[k] + '<small>' + dice + '</small></span>' +
+        '<button type="button" data-menosh="' + k + '" aria-label="Quitar">−</button>' +
+        '<span class="cuantos">' + (n % 1 === 0 ? n : n.toFixed(1)) + '</span>' +
+        '<button type="button" data-mash="' + k + '" aria-label="Poner">+</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function unidadActual() {
+    if (elegido !== null && elegido !== 'otro') return CATALOGO_OBRA[elegido].unidad;
+    return unidadNueva;
+  }
+
+  function refrescarHoja() {
+    var esOtro = elegido === 'otro';
+    $('bloqueOtro').hidden = !esOtro;
+    $('hUnidades').innerHTML = UNIDADES_ELEGIBLES.map(function (x) {
+      return '<button type="button" data-uni="' + x.u + '"' + (unidadNueva === x.u ? ' class="elegida"' : '') + '>' + x.t + '</button>';
+    }).join('');
+
+    var u = unidadActual();
+    $('hUni').textContent = (CORTA[u] || u) + ' (' + (UNIDADES[u] || '') + ')';
+    $('hNota').innerHTML = esOtro
+      ? 'Este trabajo no está en el catálogo, así que <b>no lleva precio todavía</b>. Se va a ver en tu lista esperando a que oficina se lo ponga; mientras, ya puedes apuntar lo que se haga.'
+      : 'Del catálogo ya viene el precio, así que esto empieza a contar desde que lo guardes.';
+
+    var nombreOk = !esOtro || $('hNombre').value.trim().length > 2;
+    $('hGuardar').disabled = !(elegido !== null && nombreOk && Number($('hTotal').value || 0) > 0);
+  }
+
+  $('btnNuevoM').addEventListener('click', function () {
+    elegido = null; unidadNueva = 'M2';
+    genteNueva = { maestro: 0, albanil: 1, ayudante: 1, cabo: 0.1 };
+    $('hNombre').value = ''; $('hTotal').value = 0;
+    pintarOpciones(); pintarGenteNueva(); refrescarHoja();
+    $('hoja').showModal();
+  });
+
+  $('opciones').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-op]') : null;
+    if (!b) return;
+    elegido = b.dataset.op === 'otro' ? 'otro' : Number(b.dataset.op);
+    pintarOpciones(); refrescarHoja();
+  });
+
+  $('hUnidades').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-uni]') : null;
+    if (!b) return;
+    unidadNueva = b.dataset.uni;
+    refrescarHoja();
+  });
+
+  $('hGente').addEventListener('click', function (e) {
+    var mas = e.target.closest ? e.target.closest('[data-mash]') : null;
+    var menos = e.target.closest ? e.target.closest('[data-menosh]') : null;
+    if (mas) genteNueva[mas.dataset.mash] = Math.min(9, (genteNueva[mas.dataset.mash] || 0) + PASO[mas.dataset.mash]);
+    else if (menos) genteNueva[menos.dataset.menosh] = Math.max(0, (genteNueva[menos.dataset.menosh] || 0) - PASO[menos.dataset.menosh]);
+    else return;
+    pintarGenteNueva();
+  });
+
+  $('hNombre').addEventListener('input', refrescarHoja);
+  $('hTotal').addEventListener('input', refrescarHoja);
+  $('hojaCerrar').addEventListener('click', function () { $('hoja').close(); });
+
+  $('formHoja').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var esOtro = elegido === 'otro';
+    var base = esOtro ? null : CATALOGO_OBRA[elegido];
+    var gente = {};
+    for (var k in genteNueva) if (genteNueva[k] > 0) gente[k] = genteNueva[k];
+
+    var t = {
+      id: Date.now(),
+      nombre: esOtro ? $('hNombre').value.trim() : base.nombre,
+      unidad: esOtro ? unidadNueva : base.unidad,
+      pu: esOtro ? 0 : base.pu,
+      total: Number($('hTotal').value || 0),
+      hecho: 0,
+      gente: gente,
+      normal: esOtro ? 20 : base.normal,
+      esperando: esOtro
+    };
+
+    trabajos.push(t);
+    $('hoja').close();
+    pintarLista();
+    avisar(esOtro
+      ? 'Apuntado: <b>' + escapar(t.nombre) + '</b>. Oficina lo ve ahorita y le pone precio.'
+      : 'Apuntado: <b>' + escapar(t.nombre) + '</b> · ' + num(t.total) + ' ' + escapar(corta(t)) + ' a ' + pesos(t.pu, 2) + '.');
+  });
 
   // --- amarres ------------------------------------------------------------
 
@@ -507,7 +762,7 @@
     var antes = t.pu;
     t.pu = Math.round(t.pu * (Math.random() < 0.5 ? 1.05 : 0.97));
     if (abierto && abierto.id === t.id) {
-      $('dPu').innerHTML = pesos(t.pu) + '<small>cada ' + escapar(corta(t)) + ' (' + escapar(larga(t)) + ')</small>';
+      $('dPu').innerHTML = precioTexto(t);
       calcular();
     } else {
       pintarLista();

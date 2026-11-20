@@ -63,8 +63,9 @@ cuadrillas, rendimientos y lo medido son de la maqueta.
 ## La entrada (`login.html`)
 
 Es por donde se empieza. Correo, contraseña y una pregunta: si entras desde
-**Oficina** o desde la **Obra**. Oficina llega al tablero (`index.html`) y
-obra al teléfono (`movil.html`). El tablero manda de regreso al login si no
+**Oficina** o desde la **Obra**. Después de entrar, los dos pasan por el hub de obras (`obras.html`) y al
+escoger una, oficina llega al tablero (`index.html`) y obra al teléfono
+(`movil.html`). El tablero manda de regreso al login si no
 hay nadie dentro, y el botón **Salir** de la barra de arriba cierra la
 sesión.
 
@@ -73,10 +74,22 @@ lo único que se valida es que el correo traiga arroba y la contraseña no sea
 de tres letras, para que se vea cómo avisa cuando algo falta. Cuando haya
 back, esto lo reemplaza la sesión de Supabase.
 
-## Las tres vistas de la web
+## El hub de obras (`obras.html`)
 
-- **Semana en curso**: el catálogo de la semana con el despliegue de cada
-  destajo. Es lo que oficina administra día con día.
+Después de entrar, lo primero son las obras, igual que en el sistema de
+gestión: tarjetas con municipio, residente, lo que lleva la semana, cuánto es
+de lo programado y hace cuánto fue la última captura, con buscador por obra,
+municipio o residente. Se escoge una y de ahí en adelante **todo es de esa
+obra**: la semana, los precios, el historial y el teléfono del residente.
+
+El municipio ya no se escoge a mano: lo trae la obra, y con él los jornales
+que se usan para las cuentas. Desde el tablero se vuelve con **Cambiar de
+obra**, en la barra de arriba.
+
+## Las vistas de la web
+
+- **Esta semana**: los trabajos de la obra con el despliegue de cada uno. Es
+  lo que oficina administra día con día.
 - **Catálogo**: los conceptos establecidos con su precio vigente, desde
   cuándo y de dónde salió. Arriba, los cambios por revisar: propuestas que
   salen solas de lo que la obra mide (un rendimiento que no se cumple, un
@@ -86,11 +99,16 @@ back, esto lo reemplaza la sesión de Supabase.
   alguien lo apruebe; encendido, lo que trae 20 jornadas o más se aplica solo
   y nada más se avisa. Lo aprobado baja al concepto de la semana y la obra lo
   ve en el teléfono.
-- **Obras**: dónde se está llevando el destajo y quién lo lleva. Por obra:
-  municipio, residente, avance de la semana, conceptos abiertos y hace cuánto
-  fue la última captura, con la que lleva el día sin capturar marcada en rojo.
-  En la maqueta las obras están a mano; de verdad saldrían del padrón de
-  obras, y aquí nada más se le colgaría el destajo de cada una.
+- **Precios → Cargos y jornales**: el catálogo de cargos con lo que cuesta
+  su día — cabo de oficios, maestro de obra, albañil, carpintero, fierrero,
+  operador, ayudante, chofer y velador — con su clave, el jornal de
+  referencia, cuánto es en el municipio de la obra y si entra a destajo o va
+  por nómina. De aquí salen todas las cuentas de cuadrilla, y es lo que se
+  mueve cuando el mercado sube el jornal.
+- **Historial de la obra**: todo lo que ha capturado esa obra, agrupado por
+  día, con la hora, quién lo mandó y cuánto suma cada día. De ahí sale la
+  raya de la semana, y las sumas cuadran al peso con lo que dice su tarjeta
+  en el hub.
 
 - **Mercado**: de dónde se alimenta el jornal. Una tarjeta por fuente, con lo
   que trajo, cuándo se leyó y su liga: vacantes de la zona (Indeed), Data
@@ -113,6 +131,12 @@ cálculo" ni índices ni porcentajes.
 - **Un trabajo abierto**: cuánto le pagan por unidad, quiénes trabajan ("2
   albañiles, 2 ayudantes, y el cabo a ratos") y cuánto cuesta ese día de
   gente.
+- **Apuntar un trabajo nuevo**: el botón de abajo sube una hoja donde el
+  residente escoge de una lista corta (con su precio) o escribe uno que no
+  está. Lo que escribe a mano **no lleva precio**: entra a su lista con la
+  etiqueta *Esperando que oficina le ponga precio*, y mientras tanto ya puede
+  apuntar lo que se haga. Eso es lo que en la web llega como propuesta de
+  alta en el catálogo.
 - **Dos preguntas, nada más**: cuánto hicieron hoy (con botones de +1, +5,
   +10, +25 para no teclear) y cuánta gente trabajó (media cuadrilla, la
   cuadrilla, y media, dos).

@@ -200,7 +200,9 @@
       }));
     } catch (err) { /* sin almacenamiento, se entra igual */ }
 
-    location.href = papel === 'obra' ? './movil.html' : './index.html';
+    /* Después de entrar se escoge obra: el tablero y el teléfono siempre son
+     * de una obra en particular. */
+    location.href = './obras.html';
   });
 
   $('btnOlvide').addEventListener('click', function () {

@@ -77,6 +77,11 @@
     border: 1px solid #3b382f; border-radius: 8px; padding: 5px 8px;
   }
   .barra label { display: inline-flex; align-items: center; gap: 7px; }
+  button.cambiar {
+    background: none; border: 1px solid #3b382f; border-radius: 8px;
+    font: inherit; font-size: 12.5px; color: #ffb495; padding: 5px 10px; cursor: pointer;
+  }
+  button.cambiar:hover { border-color: #ffb495; }
   button.salir {
     background: none; border: 1px solid #3b382f; border-radius: 8px;
     font: inherit; font-size: 12.5px; color: #b9b4a6; padding: 5px 10px; cursor: pointer;
@@ -368,11 +373,9 @@
 <div class="barra">
   <div class="adentro">
     <div class="marca">ROCAL <span>· Destajos</span></div>
-    <div class="obra">Torre Catalina · Frente norte</div>
+    <div class="obra" id="obraBarra">—</div>
+    <button class="cambiar" type="button" id="btnCambiarObra">Cambiar de obra</button>
     <div class="derecha">
-      <label>Municipio
-        <select id="selMunicipio"></select>
-      </label>
       <span id="quienEntro">Oficina · M. Cortés</span>
       <button class="salir" type="button" id="btnSalir">Salir</button>
       <span class="pill"><span class="dot"></span>En vivo</span>
@@ -384,7 +387,7 @@
   <nav class="vistas">
     <button type="button" data-vista="semana" class="activa">Esta semana</button>
     <button type="button" data-vista="catalogo">Precios<span class="cuenta" id="cuentaPropuestas">0</span></button>
-    <button type="button" data-vista="obras">Obras</button>
+    <button type="button" data-vista="obras">Historial de la obra</button>
     <button type="button" data-vista="mercado">Cuánto se paga afuera</button>
   </nav>
 
@@ -393,6 +396,7 @@
     <section>
       <div class="titulo">
         <h1>Trabajos de la semana</h1>
+        <span class="lbl" style="padding-bottom:5px" id="obraTitulo"></span>
         <span class="lbl" style="padding-bottom:5px">Semana 16 – 20 NOV 2026</span>
       </div>
       <p class="sub"><a href="./movil.html" target="_blank" rel="noopener">Ver la pantalla del residente ↗</a> · Cada renglón es un trabajo que se está pagando a destajo. Ábrelo y te dice quién lo hace, cuánto sale al día y si el precio alcanza para pagarle a la gente con los jornales del municipio. Lo que cambies aquí, el residente lo ve en su teléfono al momento.</p>
@@ -465,6 +469,23 @@
     <p class="sub" style="margin-bottom:12px">Nadie las escribe: cada noche se revisa lo capturado en todas las obras y lo que se sale de lo esperado se levanta aquí, con la cuenta de jornadas que lo respalda. Cada tarjeta dice de qué consulta salió.</p>
     <div class="tarjetas" id="propuestas"></div>
 
+    <h2 class="lbl" style="margin:26px 0 4px">Cargos y jornales</h2>
+    <p class="sub" style="margin-bottom:12px">Lo que cuesta un día de cada quien. De aquí salen las cuentas de todas las cuadrillas, y es lo que se mueve cuando cambia el municipio o cuando el mercado sube.</p>
+    <div class="tabla-caja">
+      <div class="scroller">
+        <table class="principal">
+          <thead><tr>
+            <th>Clave</th><th>Cargo</th>
+            <th class="num">Jornal de referencia</th>
+            <th class="num" id="thJornalMuni">En este municipio</th>
+            <th>¿Entra a destajo?</th>
+          </tr></thead>
+          <tbody id="cuerpoCargos"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="pie" style="margin-top:12px; font-size:12.5px; color:var(--fg-soft)">Si aparece un cargo que no está —electricista, plomero, yesero—, se agrega aquí y queda disponible para armar cuadrillas. Mejor empezar corto: un catálogo largo que nadie usa se llena con el primero de la lista.</p>
+
     <h2 class="lbl" style="margin:26px 0 10px">Precios que están corriendo</h2>
     <div class="tabla-caja">
       <div class="scroller">
@@ -481,22 +502,8 @@
     <p class="pie" style="margin-top:12px; font-size:12.5px; color:var(--fg-soft)">Los precios vienen del catálogo SPM 2026. Un concepto ajustado guarda de dónde salió el ajuste y quién lo aprobó.</p>
   </section>
 
-  <section id="vistaObras" hidden>
-    <div class="titulo"><h1>Obras</h1></div>
-    <p class="sub">Dónde se está llevando el destajo ahorita y quién lo lleva. Se ve de un vistazo la obra que no ha capturado en el día.</p>
-
-    <div class="tiras">
-      <div class="tira"><div class="lbl">Obras activas</div><div class="cifra" id="oActivas">0</div></div>
-      <div class="tira"><div class="lbl">Capturando hoy</div><div class="cifra" id="oHoy">0</div></div>
-      <div class="tira"><div class="lbl">Destajo de la semana</div><div class="cifra" id="oImporte">$0</div></div>
-    </div>
-
-    <div class="obras-grid" id="obras"></div>
-    <p class="pie" style="margin-top:14px; font-size:12.5px; color:var(--fg-soft)">En la maqueta las obras están puestas a mano. De verdad saldrían del padrón de obras, con su residente y su municipio; aquí nada más se le colgaría el destajo de cada una.</p>
-  </section>
-
   <section id="vistaObra" hidden>
-    <button class="vuelta" type="button" id="btnVolverObras">‹ Todas las obras</button>
+    <button class="vuelta" type="button" id="btnVolverObras">‹ Cambiar de obra</button>
     <div class="titulo"><h1 id="obNombre">Obra</h1></div>
     <p class="sub" id="obQuien">—</p>
 
@@ -628,6 +635,20 @@
     }).join(" ");
     $('quienEntro').textContent = (sesion.papel === 'obra' ? 'Obra · ' : 'Oficina · ') + nombre;
   }
+  /* La obra con la que se entró. La escoge el hub (obras.html) y vive en el
+   * navegador; cuando haya back, es el project_id de la sesión. Sin obra no
+   * hay nada que enseñar aquí: de vuelta a escogerla. */
+  var obraActiva = null;
+  try {
+    obraActiva = JSON.parse(localStorage.getItem('rocal_obra') || 'null');
+    if (!obraActiva) { location.replace('./obras.html'); return; }
+  } catch (err) { obraActiva = null; }
+
+  if (obraActiva && $('obraBarra')) $('obraBarra').textContent = obraActiva.nombre + ' · ' + obraActiva.municipio;
+  if ($('btnCambiarObra')) {
+    $('btnCambiarObra').addEventListener('click', function () { location.href = './obras.html'; });
+  }
+
   if ($('btnSalir')) {
     $('btnSalir').addEventListener('click', function () {
       try { localStorage.removeItem('rocal_sesion'); } catch (err) {}
@@ -651,12 +672,20 @@
    * Cada municipio lo mueve con su factor: la misma cuadrilla cuesta distinto
    * segun donde este la obra, y el margen del destajo se mueve con ella. */
   var PUESTOS = {
-    cabo:     { clave: 'MOCA-013', nombre: 'Cabo de oficios', corto: 'cabo', plural: 'cabos', base: 750 },
-    maestro:  { clave: 'MOCA-001', nombre: 'Maestro albañil', corto: 'maestro', plural: 'maestros', base: 850 },
-    albanil:  { clave: 'MOCA-014', nombre: 'Albañil', corto: 'albañil', plural: 'albañiles', base: 650 },
-    ayudante: { clave: 'MOCA-002', nombre: 'Ayudante general', corto: 'ayudante', plural: 'ayudantes', base: 450 }
+    cabo:       { clave: 'MOCA-013', nombre: 'Cabo de oficios', corto: 'cabo', plural: 'cabos', base: 750, cuadrilla: true },
+    maestro:    { clave: 'MOCA-001', nombre: 'Maestro de obra', corto: 'maestro', plural: 'maestros', base: 850, cuadrilla: true },
+    albanil:    { clave: 'MOCA-014', nombre: 'Albañil (oficial)', corto: 'albañil', plural: 'albañiles', base: 650, cuadrilla: true },
+    carpintero: { clave: 'MOCA-021', nombre: 'Carpintero de obra', corto: 'carpintero', plural: 'carpinteros', base: 680, cuadrilla: true },
+    fierrero:   { clave: 'MOCA-019', nombre: 'Fierrero (armador)', corto: 'fierrero', plural: 'fierreros', base: 680, cuadrilla: true },
+    operador:   { clave: 'MOCA-031', nombre: 'Operador de maquinaria', corto: 'operador', plural: 'operadores', base: 820, cuadrilla: true },
+    ayudante:   { clave: 'MOCA-002', nombre: 'Ayudante general', corto: 'ayudante', plural: 'ayudantes', base: 450, cuadrilla: true },
+    chofer:     { clave: 'MOCA-034', nombre: 'Chofer', corto: 'chofer', plural: 'choferes', base: 620, cuadrilla: false },
+    velador:    { clave: 'MOCA-040', nombre: 'Velador', corto: 'velador', plural: 'veladores', base: 420, cuadrilla: false }
   };
-  var ORDEN = ['cabo', 'maestro', 'albanil', 'ayudante'];
+  // Los que pueden formar una cuadrilla de destajo, en el orden en que se leen.
+  var ORDEN = ['cabo', 'maestro', 'albanil', 'carpintero', 'fierrero', 'operador', 'ayudante'];
+  // Todos los cargos, para la tabla de jornales.
+  var CARGOS = ORDEN.concat(['chofer', 'velador']);
 
   // Herramienta menor: el 3% de la mano de obra, como se carga en la matriz.
   var HERRAMIENTA = 0.03;
@@ -677,6 +706,16 @@
     { clave: 'nati', nombre: 'Nativitas', factor: 0.97 }
   ];
   var municipio = MUNICIPIOS[0];
+  // Los jornales son los del municipio donde está la obra elegida.
+  (function () {
+    try {
+      var g = JSON.parse(localStorage.getItem('rocal_obra') || 'null');
+      if (!g) return;
+      for (var i = 0; i < MUNICIPIOS.length; i++) {
+        if (MUNICIPIOS[i].nombre === g.municipio) municipio = MUNICIPIOS[i];
+      }
+    } catch (err) { /* se queda el de referencia */ }
+  })();
 
   /* Conceptos del catalogo SPM 2026 (actividad, unidad y precio unitario tal
    * como vienen). La cuadrilla, el rendimiento y la variabilidad son de la
@@ -837,7 +876,7 @@
    * lee. La clave de la matriz se queda, pero al final y chiquita. */
   function enPalabras(c) {
     var completos = [], ratos = [];
-    ['maestro', 'albanil', 'ayudante', 'cabo'].forEach(function (p) {
+    ORDEN.forEach(function (p) {
       var n = c.cuadrilla[p];
       if (!n) return;
       if (n >= 1) completos.push(Math.round(n) + ' ' + (n > 1 ? PUESTOS[p].plural : PUESTOS[p].corto));
@@ -1060,7 +1099,7 @@
     pintarTabla();
   });
 
-  $('selMunicipio').addEventListener('change', function () {
+  if ($('selMunicipio')) $('selMunicipio').addEventListener('change', function () {
     for (var i = 0; i < MUNICIPIOS.length; i++) {
       if (MUNICIPIOS[i].clave === this.value) municipio = MUNICIPIOS[i];
     }
@@ -1284,7 +1323,23 @@
 
   var autoCatalogo = false;
 
+  function pintarCargos() {
+    if (!$('cuerpoCargos')) return;
+    $('thJornalMuni').textContent = 'En ' + municipio.nombre;
+    $('cuerpoCargos').innerHTML = CARGOS.map(function (k) {
+      var p = PUESTOS[k];
+      return '<tr><td class="importe">' + p.clave + '</td>' +
+        '<td class="concepto" style="font-weight:600">' + escapar(p.nombre) + '</td>' +
+        '<td class="importe num">' + pesos(p.base, 2) + '</td>' +
+        '<td class="importe num">' + pesos(p.base * municipio.factor, 2) + '</td>' +
+        '<td>' + (p.cuadrilla
+          ? '<span class="pill">sí</span>'
+          : '<span class="pill gris">va por nómina</span>') + '</td></tr>';
+    }).join('');
+  }
+
   function pintarCatalogo() {
+    pintarCargos();
     $('cuerpoCatalogo').innerHTML = catalogo.map(function (k) {
       return '<tr><td class="importe">' + escapar(k.clave) + '</td>' +
         '<td class="concepto" style="font-weight:600">' + escapar(k.nombre) + '</td>' +
@@ -1442,6 +1497,8 @@
   }
 
   function pintarObras() {
+    // El listado se fue al hub; aquí ya no hay dónde pintarlo.
+    if (!$('obras')) return;
     $('obras').innerHTML = obras.map(function (o) {
       var avance = o.programado > 0 ? Math.min(1, o.capturado / o.programado) : 0;
       var alDia = o.hace <= 120;
@@ -1564,6 +1621,7 @@
     });
     ajusteMercado.aplicado = true;
     pintarMercado();
+    pintarCargos();
     pintarTodo();
     pintarCatalogo();
     latir($('totalMO'));
@@ -1681,22 +1739,11 @@
     obraAbierta = null;
     for (var i = 0; i < obras.length; i++) if (obras[i].id === id) obraAbierta = obras[i];
     if (!obraAbierta) return;
-    $('vistaObras').hidden = true;
     $('vistaObra').hidden = false;
     pintarObra();
-    window.scrollTo(0, 0);
   }
 
-  $('obras').addEventListener('click', function (e) {
-    var b = e.target.closest ? e.target.closest('[data-obra]') : null;
-    if (b) abrirObra(Number(b.dataset.obra));
-  });
-  $('btnVolverObras').addEventListener('click', function () {
-    obraAbierta = null;
-    $('vistaObra').hidden = true;
-    $('vistaObras').hidden = false;
-    pintarObras();
-  });
+  $('btnVolverObras').addEventListener('click', function () { location.href = './obras.html'; });
 
   // --- cambio de vista -----------------------------------------------------
 
@@ -1709,11 +1756,10 @@
     });
     $('vistaSemana').hidden = cual !== 'semana';
     $('vistaCatalogo').hidden = cual !== 'catalogo';
-    $('vistaObras').hidden = cual !== 'obras' || !!obraAbierta;
-    $('vistaObra').hidden = cual !== 'obras' || !obraAbierta;
+    $('vistaObra').hidden = cual !== 'obras';
     $('vistaMercado').hidden = cual !== 'mercado';
     if (cual === 'catalogo') pintarCatalogo();
-    if (cual === 'obras') pintarObras();
+    if (cual === 'obras') abrirObra(obraActiva ? obraActiva.id : 1);
     if (cual === 'mercado') pintarMercado();
   });
 
@@ -1737,7 +1783,7 @@
   // El minutero de las obras, y cada tanto una captura que llega de alguna.
   setInterval(function () {
     obras.forEach(function (o) { o.hace += 1; });
-    if (!$('vistaObras').hidden) pintarObras();
+    if (obraAbierta) pintarObra();
   }, 60000);
 
   setInterval(function () {
@@ -1767,22 +1813,20 @@
       pintarObra();
       latir($('obImporte'));
       avisar('<b>' + escapar(o.residente) + '</b> acaba de capturar ' + pesos(monto) + ' aquí.');
-    } else if (!$('vistaObras').hidden) {
-      pintarObras();
-      latir($('oImporte'));
-      avisar('<b>' + escapar(o.residente) + '</b> capturó ' + pesos(monto) + ' en ' + escapar(o.nombre) + '.');
     }
   }, 18000);
 
   // --- arranque ----------------------------------------------------------
 
-  $('selMunicipio').innerHTML = MUNICIPIOS.map(function (e) {
-    return '<option value="' + e.clave + '">' + e.nombre + '</option>';
-  }).join('');
+  if ($('selMunicipio')) {
+    $('selMunicipio').innerHTML = MUNICIPIOS.map(function (e) {
+      return '<option value="' + e.clave + '">' + e.nombre + '</option>';
+    }).join('');
+  }
 
+  if (obraActiva && $('obraTitulo')) $('obraTitulo').textContent = obraActiva.nombre;
   pintarTodo();
   pintarCatalogo();
-  pintarObras();
   pintarMercado();
 })();
 </script>
